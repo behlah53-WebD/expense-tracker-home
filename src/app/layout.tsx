@@ -26,8 +26,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#7C5CFF" },
     { media: "(prefers-color-scheme: light)", color: "#5B3AE0" },
+    { media: "(prefers-color-scheme: dark)", color: "#7C5CFF" },
   ],
 };
 
@@ -78,7 +78,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${inter.variable} ${sora.variable} ${jetbrainsMono.variable}`}
+      className={`light ${inter.variable} ${sora.variable} ${jetbrainsMono.variable}`}
     >
       <body className="antialiased min-h-dvh bg-[var(--bg-base)] text-[var(--text-body)] selection:bg-[var(--primary)]/30 selection:text-white">
         <a href="#main-content" className="skip-link">

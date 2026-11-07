@@ -99,7 +99,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="dark min-h-screen min-h-dvh w-full grid grid-cols-1 lg:grid-cols-2 bg-[var(--bg-base)] text-[var(--text-body)]">
+    <div className="min-h-screen min-h-dvh w-full grid grid-cols-1 lg:grid-cols-2 bg-[var(--bg-base)] text-[var(--text-body)]">
       {/* LEFT: 3D Aurora Visual Hero */}
       <AuthVisualHero />
 
@@ -111,7 +111,7 @@ export default function RegisterPage() {
             <Sparkles className="w-5 h-5 text-white" aria-hidden="true" />
           </div>
           <div>
-            <span className="font-heading font-extrabold text-xl tracking-wide bg-gradient-to-r from-white to-[var(--accent-cyan)] bg-clip-text text-transparent">
+            <span className="font-heading font-extrabold text-xl tracking-wide bg-gradient-to-r from-[var(--text-heading)] to-[var(--primary)] bg-clip-text text-transparent">
               Aurora
             </span>
             <span className="font-heading font-light text-[10px] block text-[var(--primary)] tracking-widest uppercase">
