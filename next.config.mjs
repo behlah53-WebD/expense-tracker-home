@@ -21,6 +21,15 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "date-fns"],
   },
+  async redirects() {
+    return [
+      {
+        source: "/api/auth/signin",
+        destination: "/login",
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

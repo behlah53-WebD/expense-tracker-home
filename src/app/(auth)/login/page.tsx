@@ -50,7 +50,7 @@ function LoginForm() {
         return;
       }
 
-      toast.success("Welcome back to Expense Tracker Ledger!");
+      toast.success("Welcome back to Aurora Ledger!");
       router.push(callbackUrl);
       router.refresh();
     } catch {
@@ -59,7 +59,7 @@ function LoginForm() {
   };
 
   const handleFillDemo = () => {
-    setValue("email", "demo@Expense Trackerledger.com");
+    setValue("email", "demo@auroraledger.com");
     setValue("password", "Password123!");
     toast.info("Demo credentials populated!");
   };
@@ -73,7 +73,7 @@ function LoginForm() {
         </div>
         <div>
           <span className="font-heading font-extrabold text-xl tracking-wide bg-gradient-to-r from-white to-[var(--accent-cyan)] bg-clip-text text-transparent">
-            Expense Tracker
+            Aurora
           </span>
           <span className="font-heading font-light text-[10px] block text-[var(--primary)] tracking-widest uppercase">
             Ledger
@@ -217,7 +217,7 @@ function LoginForm() {
             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           )}
           <span>
-            {isSubmitting ? "Signing In..." : "Sign In to Expense Tracker"}
+            {isSubmitting ? "Signing In..." : "Sign In to Aurora Ledger"}
           </span>
         </button>
       </form>
@@ -274,8 +274,8 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-[var(--bg-base)]">
-      {/* LEFT: 3D Parallax Expense Tracker Visual Hero */}
+    <div className="dark min-h-screen min-h-dvh w-full grid grid-cols-1 lg:grid-cols-2 bg-[var(--bg-base)] text-[var(--text-body)]">
+      {/* LEFT: 3D Parallax Aurora Visual Hero */}
       <AuthVisualHero />
 
       {/* RIGHT: Login Form inside Suspense */}

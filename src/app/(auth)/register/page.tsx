@@ -99,8 +99,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-[var(--bg-base)]">
-      {/* LEFT: 3D Expense Tracker Visual Hero */}
+    <div className="dark min-h-screen min-h-dvh w-full grid grid-cols-1 lg:grid-cols-2 bg-[var(--bg-base)] text-[var(--text-body)]">
+      {/* LEFT: 3D Aurora Visual Hero */}
       <AuthVisualHero />
 
       {/* RIGHT: Register Form */}
@@ -112,7 +112,7 @@ export default function RegisterPage() {
           </div>
           <div>
             <span className="font-heading font-extrabold text-xl tracking-wide bg-gradient-to-r from-white to-[var(--accent-cyan)] bg-clip-text text-transparent">
-              Expense Tracker
+              Aurora
             </span>
             <span className="font-heading font-light text-[10px] block text-[var(--primary)] tracking-widest uppercase">
               Ledger
@@ -125,7 +125,7 @@ export default function RegisterPage() {
             Create an account
           </h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1.5">
-            Join Expense Tracker Ledger and illuminate your financial horizon.
+            Join Aurora Ledger and illuminate your financial horizon.
           </p>
         </div>
 

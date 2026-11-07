@@ -1,9 +1,15 @@
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
+  trustHost: true,
+  secret:
+    process.env.AUTH_SECRET ||
+    process.env.NEXTAUTH_SECRET ||
+    "Expense Tracker_ledger_super_secret_session_jwt_key_2025_998877",
   pages: {
     signIn: "/login",
     error: "/login",
+    signOut: "/login",
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
@@ -49,4 +55,3 @@ export const authConfig = {
   },
   providers: [],
 } satisfies NextAuthConfig;
-
