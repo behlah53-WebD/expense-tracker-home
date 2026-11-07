@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
 import {
@@ -14,6 +14,7 @@ import {
   Sunrise,
   Sunset,
   X,
+  LogOut,
 } from "lucide-react";
 import { useSidebar } from "./sidebar-context";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -207,7 +208,7 @@ export function Topbar({ onOpenAddModal, onSearch }: TopbarProps) {
               <button
                 onClick={onOpenAddModal}
                 aria-label="Add transaction"
-                className="group relative overflow-hidden h-10 sm:h-11 w-10 sm:w-auto sm:px-5 inline-flex items-center justify-center gap-2 rounded-2xl text-[13px] font-semibold text-white bg-[linear-gradient(135deg,var(--primary),var(--accent-cyan))] shadow-[0_10px_26px_-10px_var(--primary)] active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none"
+                className="group relative overflow-hidden h-10 sm:h-11 w-10 sm:w-auto sm:px-5 hidden sm:inline-flex items-center justify-center gap-2 rounded-2xl text-[13px] font-semibold text-white bg-[linear-gradient(135deg,var(--primary),var(--accent-cyan))] shadow-[0_10px_26px_-10px_var(--primary)] active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none"
               >
                 <span
                   aria-hidden="true"
@@ -269,7 +270,7 @@ export function Topbar({ onOpenAddModal, onSearch }: TopbarProps) {
                 <button
                   onClick={() => setTheme(isDark ? "light" : "dark")}
                   aria-label="Toggle theme"
-                  className="sm:hidden w-10 h-10 grid place-items-center rounded-2xl border border-[var(--border)] bg-white/[0.04] text-[var(--text-secondary)]"
+                  className="sm:hidden w-10 h-10 grid place-items-center rounded-2xl border border-[var(--border)] bg-white/[0.04] text-[var(--text-secondary)] hover:text-[var(--text-heading)] transition-colors focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:outline-none"
                 >
                   {isDark ? (
                     <Sun
@@ -284,6 +285,17 @@ export function Topbar({ onOpenAddModal, onSearch }: TopbarProps) {
                   )}
                 </button>
               )}
+
+              {/* Mobile logout button */}
+              <button
+                type="button"
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                aria-label="Sign out"
+                title="Sign out"
+                className="md:hidden w-10 h-10 grid place-items-center rounded-2xl border border-[var(--border)] bg-white/[0.04] text-[var(--text-secondary)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/10 hover:border-[var(--danger)]/30 active:scale-95 transition-all focus-visible:ring-2 focus-visible:ring-[var(--danger)] focus-visible:outline-none"
+              >
+                <LogOut className="w-4 h-4" aria-hidden="true" />
+              </button>
 
               {/* Notifications */}
               <button
