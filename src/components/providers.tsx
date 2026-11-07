@@ -25,6 +25,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   );
 
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mql.matches);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+
   return (
     <SessionProvider>
       <StoreProvider>
@@ -48,14 +58,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <SWUpdateToast />
             <PWAInstallPrompt />
 
-            {/* Toasts — positioned above bottom dock on mobile */}
+            {/* Toasts — top-center just below sticky Topbar on mobile, bottom-right on desktop */}
             <Toaster
-              position="bottom-center"
+              position={isMobile ? "top-center" : "bottom-right"}
               offset={
-                typeof window !== "undefined"
-                  ? "calc(90px + env(safe-area-inset-bottom, 0px))"
-                  : "90px"
+                isMobile
+                  ? "calc(92px + env(safe-area-inset-top, 0px))"
+                  : "24px"
               }
+              mobileOffset={{
+                top: "calc(92px + env(safe-area-inset-top, 0px))",
+                left: "16px",
+                right: "16px",
+              }}
               theme="system"
               toastOptions={{
                 className: "border-l-4 border-l-[var(--primary)]",
@@ -66,7 +81,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                   borderLeft: "4px solid var(--primary)",
                   color: "var(--text-heading)",
                   borderRadius: "16px",
-                  boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.6)",
+                  boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.45)",
                 },
               }}
             />

@@ -374,3 +374,14 @@ nav, header, aside, [role="navigation"], [role="tablist"] {
 /* dvh utilities */
 .min-h-dvh { min-height: 100dvh; }
 .h-dvh { height: 100dvh; }
+
+/* Mobile Toaster positioning: pinned just below sticky Topbar */
+@media (max-width: 767px) {
+  [data-sonner-toaster] {
+    --mobile-offset-top: calc(92px + env(safe-area-inset-top, 0px));
+    --offset-top: calc(92px + env(safe-area-inset-top, 0px));
+  }
+  [data-sonner-toaster][data-y-position='top'] {
+    top: calc(92px + env(safe-area-inset-top, 0px)) !important;
+  }
+}
