@@ -618,8 +618,9 @@ export default function SettingsPage() {
         <div
           role="dialog"
           aria-modal="true"
+          data-dialog="true"
           aria-labelledby="cat-modal-title"
-          className="fixed inset-x-0 bottom-0 z-50 bg-black/60 backdrop-blur-sm md:inset-0 md:flex md:items-center md:justify-center p-0 md:p-4 animate-fade-in"
+          className="fixed inset-x-0 bottom-0 z-[80] bg-black/60 backdrop-blur-sm md:inset-0 md:flex md:items-center md:justify-center p-0 md:p-4 animate-fade-in"
         >
           <form
             onSubmit={handleAddCategory}
@@ -756,10 +757,11 @@ export default function SettingsPage() {
         <div
           role="dialog"
           aria-modal="true"
+          data-dialog="true"
           aria-labelledby="del-account-title"
-          className="fixed inset-x-0 bottom-0 z-50 bg-black/70 backdrop-blur-sm md:inset-0 md:flex md:items-center md:justify-center p-0 md:p-4 animate-fade-in"
+          className="fixed inset-x-0 bottom-0 z-[80] bg-black/70 backdrop-blur-sm md:inset-0 md:flex md:items-center md:justify-center p-0 md:p-4 animate-fade-in"
         >
-          <div className="glass-card w-full md:max-w-sm p-6 pb-[calc(24px+env(safe-area-inset-bottom,0px))] space-y-4 bg-[var(--bg-elevated)] border border-[var(--aurora-coral)]/40 text-center rounded-t-[28px] md:rounded-[24px]">
+          <div className="glass-card w-full md:max-w-sm p-6 pb-[calc(28px+env(safe-area-inset-bottom,16px))] space-y-4 bg-[var(--bg-elevated)] border border-[var(--aurora-coral)]/40 text-center rounded-t-[28px] md:rounded-[24px] shadow-2xl">
             <div className="md:hidden pt-2 pb-1 flex justify-center">
               <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
             </div>

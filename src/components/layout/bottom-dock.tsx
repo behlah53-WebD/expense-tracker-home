@@ -14,12 +14,15 @@ import { cn } from "@/lib/utils";
 
 interface BottomDockProps {
   onOpenAddModal: () => void;
+  isAddModalOpen?: boolean;
 }
 
-export function BottomDock({ onOpenAddModal }: BottomDockProps) {
+export function BottomDock({ onOpenAddModal, isAddModalOpen = false }: BottomDockProps) {
   const pathname = usePathname();
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
 
+  // Monitor software keyboard on mobile
   useEffect(() => {
     if (typeof window === "undefined") return;
     const initialHeight = window.visualViewport?.height ?? window.innerHeight;
@@ -37,6 +40,39 @@ export function BottomDock({ onOpenAddModal }: BottomDockProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Monitor any active modal, popup, drawer, or dialog in the DOM
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const checkPopup = () => {
+      const dialogs = document.querySelectorAll(
+        '[role="dialog"][aria-modal="true"], [data-popup-open="true"], [data-dialog="true"]'
+      );
+
+      let hasVisibleDialog = false;
+      for (const d of Array.from(dialogs)) {
+        const style = window.getComputedStyle(d);
+        if (style.display !== "none" && style.visibility !== "hidden" && style.opacity !== "0") {
+          hasVisibleDialog = true;
+          break;
+        }
+      }
+      setIsPopupOpen(hasVisibleDialog);
+    };
+
+    checkPopup();
+
+    const observer = new MutationObserver(checkPopup);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "aria-modal", "role", "data-popup-open"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const haptic = () => {
     if ("vibrate" in navigator) {
       try {
@@ -47,7 +83,7 @@ export function BottomDock({ onOpenAddModal }: BottomDockProps) {
     }
   };
 
-  if (isKeyboardOpen) return null;
+  const isHidden = isKeyboardOpen || isPopupOpen || isAddModalOpen;
 
   const isHomeActive = pathname === "/dashboard" || pathname === "/";
   const isHistoryActive = pathname === "/transactions" || pathname === "/income";
@@ -55,7 +91,15 @@ export function BottomDock({ onOpenAddModal }: BottomDockProps) {
   const isSettingsActive = pathname === "/settings";
 
   return (
-    <div className="fixed bottom-[calc(14px+env(safe-area-inset-bottom,0px))] left-3 right-3 z-50 md:hidden max-w-md mx-auto pointer-events-auto overflow-visible">
+    <div
+      aria-hidden={isHidden}
+      className={cn(
+        "fixed bottom-[calc(14px+env(safe-area-inset-bottom,0px))] left-3 right-3 z-40 md:hidden max-w-md mx-auto overflow-visible transition-all duration-300 ease-in-out",
+        isHidden
+          ? "opacity-0 translate-y-28 pointer-events-none invisible"
+          : "opacity-100 translate-y-0 pointer-events-auto visible"
+      )}
+    >
       <nav
         aria-label="Mobile Navigation Dock"
         className="relative rounded-[28px] border border-[var(--border)] bg-[var(--bg-elevated)]/90 backdrop-blur-2xl shadow-[0_12px_40px_-10px_rgba(0,0,0,0.7)] px-2 py-1.5 overflow-visible"

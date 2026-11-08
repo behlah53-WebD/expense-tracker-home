@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import User from "@/lib/models/User";
 import Category from "@/lib/models/Category";
 import { registerSchema } from "@/lib/validators";
+import { authLimiter, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,19 @@ const DEFAULT_CATEGORIES = [
 
 export async function POST(req: Request) {
   try {
+    // Rate limit: 10 registration attempts per minute per IP
+    const ip = getClientIp(req);
+    const rl = authLimiter.check(`register:${ip}`);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait before trying again." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) },
+        }
+      );
+    }
+
     const body = await req.json();
     const result = registerSchema.safeParse(body);
 

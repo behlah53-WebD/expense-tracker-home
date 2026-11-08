@@ -21,16 +21,20 @@ export async function GET(req: Request) {
     await connectDB();
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
-    const query: any = { userId };
+    const query: Record<string, unknown> = { userId };
     if (type) query.type = type;
 
-    const categories = await Category.find(query).sort({ name: 1 }).lean();
+    // ── Run both queries in parallel ─────────────────────────────────────
+    const [categories, counts] = await Promise.all([
+      Category.find(query)
+        .select("name color icon type userId createdAt updatedAt")
+        .sort({ name: 1 })
+        .lean(),
 
-    // Count transactions per category
-    const categoryIds = categories.map((c) => c._id);
-    const counts = await Transaction.aggregate([
-      { $match: { userId, categoryId: { $in: categoryIds } } },
-      { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+      Transaction.aggregate([
+        { $match: { userId, ...(type ? { type } : {}) } },
+        { $group: { _id: "$categoryId", count: { $sum: 1 } } },
+      ]),
     ]);
 
     const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
@@ -49,6 +53,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json(result, {
       headers: {
+        // Client may cache for 60 s; CDN/proxy may cache for 30 s
         "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
       },
     });
@@ -80,22 +85,25 @@ export async function POST(req: Request) {
     await connectDB();
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
+    const trimmedName = name.trim();
 
-    const existing = await Category.findOne({
-      userId,
-      name: { $regex: `^${name.trim()}$`, $options: "i" },
-      type,
-    }).lean();
+    // Use collation for case-insensitive duplicate check (hits the compound index)
+    const existing = await Category.findOne(
+      { userId, name: trimmedName, type },
+      { _id: 1 }
+    )
+      .collation({ locale: "en", strength: 2 })
+      .lean();
 
     if (existing) {
       return NextResponse.json(
-        { error: `Category "${name}" already exists for ${type.toLowerCase()}` },
+        { error: `Category "${trimmedName}" already exists for ${type.toLowerCase()}` },
         { status: 409 }
       );
     }
 
     const category = await Category.create({
-      name: name.trim(),
+      name: trimmedName,
       color,
       icon,
       type,

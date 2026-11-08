@@ -44,7 +44,10 @@ function AppLayoutContent({ children }: AppLayoutProps) {
       </div>
 
       {/* Mobile Floating Glass Bottom Dock */}
-      <BottomDock onOpenAddModal={() => setIsAddDrawerOpen(true)} />
+      <BottomDock
+        onOpenAddModal={() => setIsAddDrawerOpen(true)}
+        isAddModalOpen={isAddDrawerOpen}
+      />
 
       {/* Global Add / Edit Transaction Drawer */}
       <TransactionDrawer

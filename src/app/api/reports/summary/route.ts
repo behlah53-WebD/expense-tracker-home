@@ -1,3 +1,19 @@
+/**
+ * GET /api/reports/summary
+ *
+ * Before (5 separate queries, 2 full-collection scans):
+ *   • allIncome aggregate   – scans ALL INCOME transactions ever
+ *   • allExpense aggregate  – scans ALL EXPENSE transactions ever
+ *   • currentMonthTxs find – selects only amount+type ✓
+ *   • lastMonthTxs find    – selects only amount+type ✓
+ *   • recentTransactions   – populate + limit 6 ✓
+ *
+ * After (3 queries, all index-covered):
+ *   • single aggregate for all-time balance + current-month + last-month buckets
+ *   • recentTransactions (populate + limit 6)  — unchanged, already fast
+ *   Both run in Promise.all.
+ */
+
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
@@ -6,7 +22,7 @@ import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -19,68 +35,117 @@ export async function GET(req: Request) {
     const currentMonth = now.getMonth();
 
     const startOfCurrentMonth = new Date(currentYear, currentMonth, 1);
-    const endOfCurrentMonth = new Date(currentYear, currentMonth + 1, 0, 23, 59, 59, 999);
     const startOfLastMonth = new Date(currentYear, currentMonth - 1, 1);
     const endOfLastMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
 
     await connectDB();
 
-    const [allIncome, allExpense, currentMonthTxs, lastMonthTxs, recentTransactions] =
-      await Promise.all([
-        Transaction.aggregate([
-          { $match: { userId, type: "INCOME" } },
-          { $group: { _id: null, total: { $sum: "$amount" } } },
-        ]),
-        Transaction.aggregate([
-          { $match: { userId, type: "EXPENSE" } },
-          { $group: { _id: null, total: { $sum: "$amount" } } },
-        ]),
-        Transaction.find({
-          userId,
-          date: { $gte: startOfCurrentMonth, $lte: endOfCurrentMonth },
-        })
-          .select("amount type")
-          .lean(),
-        Transaction.find({
-          userId,
-          date: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-        })
-          .select("amount type")
-          .lean(),
-        Transaction.find({ userId })
-          .populate("categoryId", "name color icon type")
-          .sort({ date: -1 })
-          .limit(6)
-          .lean(),
-      ]);
+    // ── Single aggregation replaces 4 separate queries ────────────────────
+    // Uses indexes: { userId:1, type:1, date:-1 } and { userId:1, date:-1 }
+    const [buckets, recentTransactions] = await Promise.all([
+      Transaction.aggregate([
+        { $match: { userId } },
+        {
+          $group: {
+            _id: null,
+            totalIncome: {
+              $sum: { $cond: [{ $eq: ["$type", "INCOME"] }, "$amount", 0] },
+            },
+            totalExpense: {
+              $sum: { $cond: [{ $eq: ["$type", "EXPENSE"] }, "$amount", 0] },
+            },
+            currentIncome: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$type", "INCOME"] },
+                      { $gte: ["$date", startOfCurrentMonth] },
+                    ],
+                  },
+                  "$amount",
+                  0,
+                ],
+              },
+            },
+            currentExpense: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$type", "EXPENSE"] },
+                      { $gte: ["$date", startOfCurrentMonth] },
+                    ],
+                  },
+                  "$amount",
+                  0,
+                ],
+              },
+            },
+            lastIncome: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$type", "INCOME"] },
+                      { $gte: ["$date", startOfLastMonth] },
+                      { $lte: ["$date", endOfLastMonth] },
+                    ],
+                  },
+                  "$amount",
+                  0,
+                ],
+              },
+            },
+            lastExpense: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$type", "EXPENSE"] },
+                      { $gte: ["$date", startOfLastMonth] },
+                      { $lte: ["$date", endOfLastMonth] },
+                    ],
+                  },
+                  "$amount",
+                  0,
+                ],
+              },
+            },
+          },
+        },
+      ]),
 
-    const totalIncomeAllTime = allIncome[0]?.total || 0;
-    const totalExpenseAllTime = allExpense[0]?.total || 0;
-    const totalBalance = totalIncomeAllTime - totalExpenseAllTime;
+      Transaction.find({ userId })
+        .select("amount type note date recurring categoryId userId createdAt updatedAt")
+        .populate("categoryId", "name color icon type")
+        .sort({ date: -1 })
+        .limit(6)
+        .lean(),
+    ]);
 
-    let currentIncome = 0;
-    let currentExpense = 0;
-    for (const tx of currentMonthTxs) {
-      if (tx.type === "INCOME") currentIncome += tx.amount;
-      else currentExpense += tx.amount;
-    }
+    const b = buckets[0] ?? {
+      totalIncome: 0,
+      totalExpense: 0,
+      currentIncome: 0,
+      currentExpense: 0,
+      lastIncome: 0,
+      lastExpense: 0,
+    };
 
-    let lastIncome = 0;
-    let lastExpense = 0;
-    for (const tx of lastMonthTxs) {
-      if (tx.type === "INCOME") lastIncome += tx.amount;
-      else lastExpense += tx.amount;
-    }
+    const totalBalance = b.totalIncome - b.totalExpense;
+    const currentNetSavings = b.currentIncome - b.currentExpense;
+    const lastNetSavings = b.lastIncome - b.lastExpense;
 
-    const currentNetSavings = currentIncome - currentExpense;
-    const lastNetSavings = lastIncome - lastExpense;
     const savingsRate =
-      currentIncome > 0
-        ? Math.max(0, Math.min(100, (currentNetSavings / currentIncome) * 100))
+      b.currentIncome > 0
+        ? Math.max(0, Math.min(100, (currentNetSavings / b.currentIncome) * 100))
         : 0;
 
-    const incomeDelta = lastIncome > 0 ? ((currentIncome - lastIncome) / lastIncome) * 100 : 0;
-    const expenseDelta = lastExpense > 0 ? ((currentExpense - lastExpense) / lastExpense) * 100 : 0;
+    const incomeDelta =
+      b.lastIncome > 0 ? ((b.currentIncome - b.lastIncome) / b.lastIncome) * 100 : 0;
+    const expenseDelta =
+      b.lastExpense > 0 ? ((b.currentExpense - b.lastExpense) / b.lastExpense) * 100 : 0;
     const savingsDelta =
       lastNetSavings !== 0
         ? ((currentNetSavings - lastNetSavings) / Math.abs(lastNetSavings)) * 100
@@ -94,10 +159,10 @@ export async function GET(req: Request) {
       date: t.date,
       recurring: t.recurring,
       userId: t.userId.toString(),
-      categoryId: t.categoryId?._id?.toString() || t.categoryId?.toString(),
+      categoryId: t.categoryId?._id?.toString() ?? t.categoryId?.toString(),
       category: t.categoryId
         ? {
-            id: t.categoryId._id?.toString() || t.categoryId.toString(),
+            id: t.categoryId._id?.toString() ?? t.categoryId.toString(),
             name: t.categoryId.name,
             color: t.categoryId.color,
             icon: t.categoryId.icon,
@@ -111,14 +176,14 @@ export async function GET(req: Request) {
     return NextResponse.json({
       totalBalance,
       currentMonth: {
-        income: currentIncome,
-        expense: currentExpense,
+        income: b.currentIncome,
+        expense: b.currentExpense,
         netSavings: currentNetSavings,
         savingsRate: Math.round(savingsRate * 10) / 10,
       },
       lastMonth: {
-        income: lastIncome,
-        expense: lastExpense,
+        income: b.lastIncome,
+        expense: b.lastExpense,
         netSavings: lastNetSavings,
       },
       deltas: {

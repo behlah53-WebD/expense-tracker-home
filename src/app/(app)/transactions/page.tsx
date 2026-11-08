@@ -302,12 +302,20 @@ export default function TransactionsPage() {
   };
 
   useEffect(() => {
+    if (deleteConfirmId) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setDeleteConfirmId(null);
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [deleteConfirmId]);
 
   const handleEdit = useCallback((tx: TransactionWithCategory) => {
     setEditingTx(tx);
@@ -692,12 +700,13 @@ export default function TransactionsPage() {
         <div
           role="dialog"
           aria-modal="true"
+          data-dialog="true"
           aria-labelledby="delete-dialog-title"
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4"
+          className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in"
           onClick={() => setDeleteConfirmId(null)}
         >
           <div
-            className="glass-card w-full md:max-w-sm p-6 pb-[calc(24px+env(safe-area-inset-bottom,0px))] space-y-4 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-t-[28px] md:rounded-[24px]"
+            className="glass-card w-full md:max-w-sm p-6 pb-[calc(28px+env(safe-area-inset-bottom,16px))] space-y-4 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-t-[28px] md:rounded-[24px] shadow-2xl relative z-10"
             onClick={e => e.stopPropagation()}
           >
             <div className="md:hidden pt-1 pb-3 flex justify-center">

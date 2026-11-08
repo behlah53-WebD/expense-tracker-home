@@ -8,8 +8,32 @@ import { transactionSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
+function normalise(t: any) {
+  return {
+    id: t._id.toString(),
+    amount: t.amount,
+    type: t.type,
+    note: t.note || null,
+    date: t.date,
+    recurring: t.recurring,
+    userId: t.userId.toString(),
+    categoryId: t.categoryId?._id?.toString() ?? t.categoryId?.toString(),
+    category: t.categoryId
+      ? {
+          id: t.categoryId._id?.toString() ?? t.categoryId.toString(),
+          name: t.categoryId.name,
+          color: t.categoryId.color,
+          icon: t.categoryId.icon,
+          type: t.categoryId.type,
+        }
+      : null,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  };
+}
+
 export async function GET(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -19,17 +43,14 @@ export async function GET(
     }
 
     const { id } = await context.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     await connectDB();
 
-    const transaction = await Transaction.findOne({
-      _id: id,
-      userId: session.user.id,
-    })
+    const transaction = await Transaction.findOne({ _id: id, userId: session.user.id })
+      .select("amount type note date recurring categoryId userId createdAt updatedAt")
       .populate("categoryId", "name color icon type")
       .lean();
 
@@ -37,28 +58,7 @@ export async function GET(
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
-    const t = transaction as any;
-    return NextResponse.json({
-      id: t._id.toString(),
-      amount: t.amount,
-      type: t.type,
-      note: t.note || null,
-      date: t.date,
-      recurring: t.recurring,
-      userId: t.userId.toString(),
-      categoryId: t.categoryId?._id?.toString(),
-      category: t.categoryId
-        ? {
-            id: t.categoryId._id.toString(),
-            name: t.categoryId.name,
-            color: t.categoryId.color,
-            icon: t.categoryId.icon,
-            type: t.categoryId.type,
-          }
-        : null,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
-    });
+    return NextResponse.json(normalise(transaction as any));
   } catch (error) {
     console.error("Transaction GET error:", error);
     return NextResponse.json({ error: "Failed to fetch transaction" }, { status: 500 });
@@ -76,14 +76,12 @@ export async function PUT(
     }
 
     const { id } = await context.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
     const body = await req.json();
     const result = transactionSchema.safeParse(body);
-
     if (!result.success) {
       return NextResponse.json(
         { error: "Validation failed", details: result.error.flatten().fieldErrors },
@@ -93,19 +91,17 @@ export async function PUT(
 
     const { amount, type, categoryId, date, note, recurring } = result.data;
 
-    await connectDB();
-
-    const userId = new mongoose.Types.ObjectId(session.user.id);
-
     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
       return NextResponse.json({ error: "Invalid category selected" }, { status: 400 });
     }
 
-    const category = await Category.findOne({
-      _id: new mongoose.Types.ObjectId(categoryId),
-      userId,
-    }).lean();
+    await connectDB();
 
+    const userId = new mongoose.Types.ObjectId(session.user.id);
+    const catObjId = new mongoose.Types.ObjectId(categoryId);
+
+    // Verify category ownership (lean, select _id only → index-covered)
+    const category = await Category.findOne({ _id: catObjId, userId }, { _id: 1 }).lean();
     if (!category) {
       return NextResponse.json({ error: "Invalid category selected" }, { status: 400 });
     }
@@ -115,13 +111,14 @@ export async function PUT(
       {
         amount,
         type,
-        categoryId: new mongoose.Types.ObjectId(categoryId),
+        categoryId: catObjId,
         date: new Date(date),
         note: note ? note.trim() : undefined,
         recurring: !!recurring,
       },
       { new: true }
     )
+      .select("amount type note date recurring categoryId userId createdAt updatedAt")
       .populate("categoryId", "name color icon type")
       .lean();
 
@@ -129,28 +126,7 @@ export async function PUT(
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
-    const t = transaction as any;
-    return NextResponse.json({
-      id: t._id.toString(),
-      amount: t.amount,
-      type: t.type,
-      note: t.note || null,
-      date: t.date,
-      recurring: t.recurring,
-      userId: t.userId.toString(),
-      categoryId: t.categoryId?._id?.toString(),
-      category: t.categoryId
-        ? {
-            id: t.categoryId._id.toString(),
-            name: t.categoryId.name,
-            color: t.categoryId.color,
-            icon: t.categoryId.icon,
-            type: t.categoryId.type,
-          }
-        : null,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
-    });
+    return NextResponse.json(normalise(transaction as any));
   } catch (error) {
     console.error("Transaction PUT error:", error);
     return NextResponse.json({ error: "Failed to update transaction" }, { status: 500 });
@@ -158,7 +134,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
+  _req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -168,7 +144,6 @@ export async function DELETE(
     }
 
     const { id } = await context.params;
-
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }

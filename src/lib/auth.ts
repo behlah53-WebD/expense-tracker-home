@@ -80,8 +80,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session;
     },
   },
-  secret:
-    process.env.AUTH_SECRET ||
-    process.env.NEXTAUTH_SECRET ||
-    "Expense Tracker_ledger_super_secret_session_jwt_key_2025_998877",
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
 });

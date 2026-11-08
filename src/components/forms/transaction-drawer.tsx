@@ -94,15 +94,19 @@ export function TransactionDrawer({
     onClose();
   };
 
-  // Close on ESC and focus handling
+  // Close on ESC, body scroll lock, and focus handling
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     if (isOpen) {
+      document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
     }
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isOpen, onClose]);
 
   return (
@@ -111,8 +115,9 @@ export function TransactionDrawer({
         <div
           role="dialog"
           aria-modal="true"
+          data-dialog="true"
           aria-labelledby="drawer-title"
-          className="fixed inset-0 z-50 overflow-hidden"
+          className="fixed inset-0 z-[70] overflow-hidden"
         >
           {/* Backdrop */}
           <motion.div

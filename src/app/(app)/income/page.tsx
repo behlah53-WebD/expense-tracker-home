@@ -25,6 +25,7 @@ import {
   Trash2,
   Repeat,
   Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 
 // Lazy-load CategoryDonut
@@ -69,10 +70,27 @@ export default function IncomePage() {
   const [editingTx, setEditingTx] = useState<TransactionWithCategory | null>(
     null
   );
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (deleteConfirmId) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDeleteConfirmId(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [deleteConfirmId]);
 
   // Income transactions
   const { data: txData, isLoading } = useTransactions({
@@ -324,7 +342,7 @@ export default function IncomePage() {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => deleteMutation.mutate(tx.id)}
+                        onClick={() => setDeleteConfirmId(tx.id)}
                         className="w-11 h-11 rounded-xl flex items-center justify-center glass-card text-[var(--text-muted)] hover:text-[var(--aurora-coral)] transition-colors"
                         aria-label={`Delete ${tx.category.name}`}
                       >
@@ -402,7 +420,7 @@ export default function IncomePage() {
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => deleteMutation.mutate(tx.id)}
+                            onClick={() => setDeleteConfirmId(tx.id)}
                             className="w-11 h-11 rounded-xl flex items-center justify-center glass-card hover:text-[var(--aurora-coral)] transition-colors"
                             aria-label={`Delete ${tx.category.name}`}
                           >
@@ -418,6 +436,62 @@ export default function IncomePage() {
           </>
         )}
       </GlassCard>
+
+      {/* Delete confirmation */}
+      {deleteConfirmId && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          data-dialog="true"
+          aria-labelledby="delete-income-title"
+          className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in"
+          onClick={() => setDeleteConfirmId(null)}
+        >
+          <div
+            className="glass-card w-full md:max-w-sm p-6 pb-[calc(28px+env(safe-area-inset-bottom,16px))] space-y-4 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-t-[28px] md:rounded-[24px] shadow-2xl relative z-10"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="md:hidden pt-1 pb-3 flex justify-center">
+              <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-[var(--aurora-coral)]/15 text-[var(--aurora-coral)] grid place-items-center mx-auto">
+              <AlertTriangle className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div className="text-center">
+              <h3
+                id="delete-income-title"
+                className="font-heading font-bold text-base text-[var(--text-primary)]"
+              >
+                Delete this income record?
+              </h3>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                It will be removed from your ledger and totals. This cannot be undone.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmId(null)}
+                className="h-11 rounded-xl text-[13px] font-semibold glass-card hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors"
+              >
+                Keep it
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!deleteConfirmId) return;
+                  await deleteMutation.mutateAsync(deleteConfirmId);
+                  setDeleteConfirmId(null);
+                }}
+                disabled={deleteMutation.isPending}
+                className="h-11 rounded-xl text-[13px] font-semibold bg-[var(--aurora-coral)] hover:opacity-90 disabled:opacity-60 text-white transition-opacity"
+              >
+                {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Transaction Slide-over Drawer */}
       <TransactionDrawer

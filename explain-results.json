@@ -1,0 +1,37 @@
+{
+  "transactions_paginated_date_desc": {
+    "indexUsed": "COLLSCAN",
+    "nReturned": 0,
+    "docsExamined": 0,
+    "keysExamined": 0,
+    "executionTimeMillis": 2
+  },
+  "transactions_type_date": {
+    "indexUsed": "COLLSCAN",
+    "nReturned": 0,
+    "docsExamined": 0,
+    "keysExamined": 0,
+    "executionTimeMillis": 0
+  },
+  "transactions_summary_all_income": {
+    "indexUsed": "COLLSCAN",
+    "nReturned": 0,
+    "docsExamined": 0,
+    "keysExamined": 0,
+    "executionTimeMillis": 0
+  },
+  "categories_by_userId_type": {
+    "indexUsed": "COLLSCAN",
+    "nReturned": 0,
+    "docsExamined": 0,
+    "keysExamined": 0,
+    "executionTimeMillis": 0
+  },
+  "budgets_by_month_year": {
+    "indexUsed": "COLLSCAN",
+    "nReturned": 0,
+    "docsExamined": 0,
+    "keysExamined": 0,
+    "executionTimeMillis": 0
+  }
+}

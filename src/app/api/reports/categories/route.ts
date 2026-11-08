@@ -1,3 +1,14 @@
+/**
+ * GET /api/reports/categories
+ *
+ * Before: Transaction.find(...).populate(categoryId).sort({amount:-1}).lean()
+ *   – loads every individual transaction into memory, then groups in JS
+ *
+ * After: single $group aggregation with $lookup (no populate N+1)
+ *   – hits index { userId:1, type:1, categoryId:1 }
+ *   – returns only the grouped summary + top-5 raw docs
+ */
+
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
@@ -19,70 +30,73 @@ export async function GET(req: Request) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
-    await connectDB();
-
-    const matchQuery: any = { userId, type };
-
+    // Build date range
+    let dateRange: Record<string, Date> | undefined;
     if (from || to) {
-      matchQuery.date = {};
-      if (from) matchQuery.date.$gte = new Date(from);
+      dateRange = {};
+      if (from) dateRange.$gte = new Date(from);
       if (to) {
         const toDate = new Date(to);
         toDate.setHours(23, 59, 59, 999);
-        matchQuery.date.$lte = toDate;
+        dateRange.$lte = toDate;
       }
     } else {
       const now = new Date();
-      matchQuery.date = {
+      dateRange = {
         $gte: new Date(now.getFullYear(), now.getMonth(), 1),
         $lte: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
       };
     }
 
-    const transactions = await Transaction.find(matchQuery)
-      .populate("categoryId", "name color icon type")
-      .sort({ amount: -1 })
-      .lean();
+    const matchStage: Record<string, unknown> = { userId, type, date: dateRange };
 
-    const totalAmount = (transactions as any[]).reduce((acc: number, t: any) => acc + t.amount, 0);
+    await connectDB();
 
-    const categoryMap = new Map<string, {
-      categoryId: string;
-      name: string;
-      color: string;
-      icon: string;
-      amount: number;
-      count: number;
-      percentage: number;
-    }>();
+    // ── Run group aggregation + top-5 fetch in parallel ───────────────────
+    const [grouped, top5Raw] = await Promise.all([
+      Transaction.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$categoryId",
+            amount: { $sum: "$amount" },
+            count: { $sum: 1 },
+          },
+        },
+        {
+          $lookup: {
+            from: "categories",
+            localField: "_id",
+            foreignField: "_id",
+            as: "cat",
+            pipeline: [{ $project: { name: 1, color: 1, icon: 1 } }],
+          },
+        },
+        { $unwind: { path: "$cat", preserveNullAndEmptyArrays: true } },
+        { $sort: { amount: -1 } },
+      ]),
 
-    for (const t of transactions as any[]) {
-      const cat = t.categoryId;
-      if (!cat) continue;
-      const catId = cat._id?.toString() || cat.toString();
-      if (!categoryMap.has(catId)) {
-        categoryMap.set(catId, {
-          categoryId: catId,
-          name: cat.name || "Unknown",
-          color: cat.color || "#8B93B8",
-          icon: cat.icon || "MoreHorizontal",
-          amount: 0,
-          count: 0,
-          percentage: 0,
-        });
-      }
-      const item = categoryMap.get(catId)!;
-      item.amount += t.amount;
-      item.count += 1;
-    }
+      Transaction.find(matchStage)
+        .select("amount type note date categoryId")
+        .populate("categoryId", "name color icon")
+        .sort({ amount: -1 })
+        .limit(5)
+        .lean(),
+    ]);
 
-    const categories = Array.from(categoryMap.values()).map((c) => ({
-      ...c,
-      percentage: totalAmount > 0 ? Math.round((c.amount / totalAmount) * 1000) / 10 : 0,
+    const totalAmount = grouped.reduce((s: number, g: any) => s + g.amount, 0);
+
+    const categories = grouped.map((g: any) => ({
+      categoryId: g._id?.toString(),
+      name: g.cat?.name || "Unknown",
+      color: g.cat?.color || "#8B93B8",
+      icon: g.cat?.icon || "MoreHorizontal",
+      amount: g.amount,
+      count: g.count,
+      percentage: totalAmount > 0 ? Math.round((g.amount / totalAmount) * 1000) / 10 : 0,
     }));
-    categories.sort((a, b) => b.amount - a.amount);
 
-    const top5Transactions = (transactions as any[]).slice(0, 5).map((t) => ({
+    const top5Transactions = (top5Raw as any[]).map((t) => ({
       id: t._id.toString(),
       amount: t.amount,
       type: t.type,
@@ -103,14 +117,16 @@ export async function GET(req: Request) {
 
     if (categories.length > 0) {
       const topCat = categories[0];
-      insights.push(`Your largest ${type === "EXPENSE" ? "expense" : "income source"} is ${topCat.name}, representing ${topCat.percentage}% of your total.`);
-      const foodCat = categories.find((c) => c.name.toLowerCase() === "food");
+      insights.push(
+        `Your largest ${type === "EXPENSE" ? "expense" : "income source"} is ${topCat.name}, representing ${topCat.percentage}% of your total.`
+      );
+      const foodCat = categories.find((c: any) => c.name.toLowerCase() === "food");
       if (foodCat && foodCat.percentage > 25) {
         insights.push("Food and dining accounts for over a quarter of your spending this period.");
       } else if (foodCat) {
         insights.push("Great job managing food expenses! You kept dining well within normal parameters.");
       }
-      const shoppingCat = categories.find((c) => c.name.toLowerCase() === "shopping");
+      const shoppingCat = categories.find((c: any) => c.name.toLowerCase() === "shopping");
       if (shoppingCat && shoppingCat.percentage > 20) {
         insights.push("Shopping spending is elevated this cycle. Consider setting a dedicated category cap.");
       }

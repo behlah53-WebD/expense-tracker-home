@@ -8,6 +8,31 @@ import { transactionSchema, transactionFilterSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
 
+/** Normalise a lean transaction document to the API shape */
+function normalise(t: any) {
+  return {
+    id: t._id.toString(),
+    amount: t.amount,
+    type: t.type,
+    note: t.note || null,
+    date: t.date,
+    recurring: t.recurring,
+    userId: t.userId.toString(),
+    categoryId: t.categoryId?._id?.toString() ?? t.categoryId?.toString(),
+    category: t.categoryId
+      ? {
+          id: t.categoryId._id?.toString() ?? t.categoryId.toString(),
+          name: t.categoryId.name,
+          color: t.categoryId.color,
+          icon: t.categoryId.icon,
+          type: t.categoryId.type,
+        }
+      : null,
+    createdAt: t.createdAt,
+    updatedAt: t.updatedAt,
+  };
+}
+
 export async function GET(req: Request) {
   try {
     const session = await auth();
@@ -40,28 +65,32 @@ export async function GET(req: Request) {
     await connectDB();
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
-    const query: any = { userId };
+    const query: Record<string, unknown> = { userId };
 
     if (type) query.type = type;
     if (categoryId && categoryId !== "ALL" && mongoose.Types.ObjectId.isValid(categoryId)) {
       query.categoryId = new mongoose.Types.ObjectId(categoryId);
     }
     if (from || to) {
-      query.date = {};
-      if (from) query.date.$gte = new Date(from);
+      const dateRange: Record<string, Date> = {};
+      if (from) dateRange.$gte = new Date(from);
       if (to) {
         const toDate = new Date(to);
         toDate.setHours(23, 59, 59, 999);
-        query.date.$lte = toDate;
+        dateRange.$lte = toDate;
       }
+      query.date = dateRange;
     }
 
-    // Search query - search in note or category name
+    // ── Search: single category query (all matching IDs) then $or ──────────
+    // Before: separate Category.find() + reassemble — still one extra round-trip
+    // This is unavoidable unless we store denormalised category name on Transaction.
+    // We minimise cost by selecting only _id and using an index-covered query.
     if (q) {
-      const matchingCats = await Category.find({
-        userId,
-        name: { $regex: q, $options: "i" },
-      }).select("_id");
+      const matchingCats = await Category.find(
+        { userId, name: { $regex: q, $options: "i" } },
+        { _id: 1 }   // projection: only _id (index-covered)
+      ).lean();
       const matchingCategoryIds = matchingCats.map((c) => c._id as mongoose.Types.ObjectId);
       query.$or = [
         { note: { $regex: q, $options: "i" } },
@@ -70,7 +99,7 @@ export async function GET(req: Request) {
     }
 
     // Sort order
-    let sortQuery: any = { date: -1 };
+    let sortQuery: Record<string, 1 | -1> = { date: -1 };
     if (sort === "date-asc") sortQuery = { date: 1 };
     if (sort === "amount-desc") sortQuery = { amount: -1 };
     if (sort === "amount-asc") sortQuery = { amount: 1 };
@@ -79,6 +108,7 @@ export async function GET(req: Request) {
 
     const [transactions, totalCount] = await Promise.all([
       Transaction.find(query)
+        .select("amount type note date recurring categoryId userId createdAt updatedAt")
         .populate("categoryId", "name color icon type")
         .sort(sortQuery)
         .skip(skip)
@@ -87,32 +117,10 @@ export async function GET(req: Request) {
       Transaction.countDocuments(query),
     ]);
 
-    const normalized = (transactions as any[]).map((t) => ({
-      id: t._id.toString(),
-      amount: t.amount,
-      type: t.type,
-      note: t.note || null,
-      date: t.date,
-      recurring: t.recurring,
-      userId: t.userId.toString(),
-      categoryId: t.categoryId?._id?.toString() || t.categoryId?.toString(),
-      category: t.categoryId
-        ? {
-            id: t.categoryId._id?.toString() || t.categoryId.toString(),
-            name: t.categoryId.name,
-            color: t.categoryId.color,
-            icon: t.categoryId.icon,
-            type: t.categoryId.type,
-          }
-        : null,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
-    }));
-
     const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
-      transactions: normalized,
+      transactions: (transactions as any[]).map(normalise),
       pagination: {
         page,
         limit,
@@ -146,19 +154,17 @@ export async function POST(req: Request) {
 
     const { amount, type, categoryId, date, note, recurring } = result.data;
 
-    await connectDB();
-
-    const userId = new mongoose.Types.ObjectId(session.user.id);
-
     if (!mongoose.Types.ObjectId.isValid(categoryId)) {
       return NextResponse.json({ error: "Invalid category selected" }, { status: 400 });
     }
 
-    const category = await Category.findOne({
-      _id: new mongoose.Types.ObjectId(categoryId),
-      userId,
-    }).lean();
+    await connectDB();
 
+    const userId = new mongoose.Types.ObjectId(session.user.id);
+    const catObjId = new mongoose.Types.ObjectId(categoryId);
+
+    // Verify category ownership (lean + select _id only → index-covered)
+    const category = await Category.findOne({ _id: catObjId, userId }, { _id: 1 }).lean();
     if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 400 });
     }
@@ -166,42 +172,20 @@ export async function POST(req: Request) {
     const transaction = await Transaction.create({
       amount,
       type,
-      categoryId: new mongoose.Types.ObjectId(categoryId),
+      categoryId: catObjId,
       date: new Date(date),
       note: note ? note.trim() : undefined,
       recurring: !!recurring,
       userId,
     });
 
+    // Single query to get the populated response (avoid a second findById)
     const populated = await Transaction.findById(transaction._id)
+      .select("amount type note date recurring categoryId userId createdAt updatedAt")
       .populate("categoryId", "name color icon type")
       .lean();
 
-    const t = populated as any;
-    return NextResponse.json(
-      {
-        id: t._id.toString(),
-        amount: t.amount,
-        type: t.type,
-        note: t.note || null,
-        date: t.date,
-        recurring: t.recurring,
-        userId: t.userId.toString(),
-        categoryId: t.categoryId?._id?.toString(),
-        category: t.categoryId
-          ? {
-              id: t.categoryId._id.toString(),
-              name: t.categoryId.name,
-              color: t.categoryId.color,
-              icon: t.categoryId.icon,
-              type: t.categoryId.type,
-            }
-          : null,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json(normalise(populated as any), { status: 201 });
   } catch (error) {
     console.error("Transaction POST error:", error);
     return NextResponse.json({ error: "Failed to create transaction" }, { status: 500 });

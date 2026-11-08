@@ -13,11 +13,18 @@ export interface IUser extends Document {
 
 const UserSchema = new Schema<IUser>(
   {
-    name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    name: { type: String, required: true, trim: true, maxlength: 100 },
+    email: {
+      type: String,
+      required: true,
+      unique: true,       // unique index auto-created
+      lowercase: true,
+      trim: true,
+      maxlength: 320,
+    },
     passwordHash: { type: String },
     image: { type: String },
-    currency: { type: String, default: "INR" },
+    currency: { type: String, default: "INR", maxlength: 3 },
   },
   { timestamps: true }
 );
@@ -27,4 +34,3 @@ const User: Model<IUser> =
   mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
 
 export default User;
-
