@@ -11,11 +11,8 @@ import { SavingsRing } from "@/components/dashboard/savings-ring";
 import { BudgetProgressCard } from "@/components/dashboard/budget-progress-card";
 import { RecentTransactionsCard } from "@/components/dashboard/recent-transactions-card";
 import { CountUpAmount } from "@/components/ui/count-up-amount";
-import {
-  useSummary,
-  useMonthlyTrend,
-  useCategoryBreakdown,
-} from "@/hooks/useReports";
+import { useDashboard } from "@/hooks/useDashboard";
+import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import {
   TrendingUp,
   ArrowDownRight,
@@ -366,14 +363,17 @@ export default function DashboardPage() {
   const currency = (session?.user as any)?.currency || "INR";
   const firstName = ((session?.user?.name as string) || "").split(" ")[0];
 
-  // Top-level hooks - NEVER called inside useMemo or JSX
-  const { data: summary } = useSummary();
-  const { data: monthlyData } = useMonthlyTrend();
-  const { data: categoryData } = useCategoryBreakdown({ type: "EXPENSE" });
+  // Unified single endpoint hook with instant 0ms localStorage render & silent revalidation
+  const { data, isLoading, isFetching } = useDashboard();
 
   // client-only clock avoids SSR/hydration mismatch
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
+
+  const summary = data?.summary;
+  const monthlyData = data?.monthlyTrend;
+  const categoryData = data?.categoryBreakdown;
+  const budgets = data?.budgets || [];
 
   const m = useMemo(() => {
     const cm = summary?.currentMonth;
@@ -497,6 +497,10 @@ export default function DashboardPage() {
 
   const categories = categoryData?.categories || [];
   const transactions = summary?.recentTransactions || [];
+
+  if (isLoading && !data) {
+    return <DashboardSkeleton />;
+  }
 
   return (
     <div className="dx-root relative isolate space-y-6">
@@ -687,7 +691,7 @@ export default function DashboardPage() {
           />
         </div>
         <div className="sm:col-span-2 lg:col-span-5">
-          <BudgetProgressCard currency={currency} />
+          <BudgetProgressCard currency={currency} budgets={budgets} />
         </div>
       </div>
     </div>

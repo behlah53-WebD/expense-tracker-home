@@ -10,11 +10,15 @@ import { ChevronRight, Target, AlertTriangle } from "lucide-react";
 
 export function BudgetProgressCard({
   currency = "INR",
+  budgets: initialBudgets,
 }: {
   currency?: string;
+  budgets?: any[];
 }) {
-  const { data, isLoading } = useBudgets();
-  const budgets = data?.budgets || [];
+  // If initialBudgets is passed from unified dashboard endpoint, skip fetching
+  const { data, isLoading: queryLoading } = useBudgets();
+  const budgets = initialBudgets ?? data?.budgets ?? [];
+  const isLoading = initialBudgets ? false : queryLoading;
 
   return (
     <GlassCard className="h-full flex flex-col justify-between">

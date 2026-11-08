@@ -30,6 +30,9 @@ export function useSaveBudget() {
   const mutateAsync = async (data: BudgetInput) => {
     try {
       const res = await saveBudget(data).unwrap();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:mutation"));
+      }
       toast.success("Budget saved!");
       return res;
     } catch (err: any) {
@@ -51,6 +54,9 @@ export function useDeleteBudget() {
   const mutateAsync = async (id: string) => {
     try {
       const res = await deleteBudget(id).unwrap();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:mutation"));
+      }
       toast.success("Budget removed");
       return res;
     } catch (err: any) {

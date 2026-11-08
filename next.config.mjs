@@ -69,10 +69,9 @@ const nextConfig = {
         ],
       },
       {
-        // API routes: no caching by default; individual routes can override
+        // Global API security headers (Cache-Control is managed per-route)
         source: "/api/:path*",
         headers: [
-          { key: "Cache-Control", value: "no-store" },
           { key: "X-Content-Type-Options", value: "nosniff" },
         ],
       },

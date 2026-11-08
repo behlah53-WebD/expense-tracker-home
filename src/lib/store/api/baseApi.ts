@@ -139,10 +139,17 @@ export const baseApi = createApi({
     "MonthlyTrend",
     "CategoryBreakdown",
     "UserProfile",
+    "Dashboard",
   ],
   keepUnusedDataFor: 300, // Cache server responses for 5 minutes
   refetchOnMountOrArgChange: 30, // Refetch only if 30s have passed since last mount
   endpoints: (builder) => ({
+    // Unified Fast Dashboard Endpoint
+    getDashboard: builder.query<any, void>({
+      query: () => "/dashboard",
+      providesTags: ["Dashboard", "Summary", "MonthlyTrend", "CategoryBreakdown", "Budgets"],
+    }),
+
     // Reports Endpoints
     getSummary: builder.query<SummaryData, void>({
       query: () => "/reports/summary",
@@ -351,6 +358,7 @@ export const baseApi = createApi({
 });
 
 export const {
+  useGetDashboardQuery,
   useGetSummaryQuery,
   useGetMonthlyTrendQuery,
   useGetCategoryBreakdownQuery,

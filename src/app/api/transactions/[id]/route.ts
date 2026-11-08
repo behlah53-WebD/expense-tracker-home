@@ -4,9 +4,11 @@ import connectDB from "@/lib/mongodb";
 import Transaction from "@/lib/models/Transaction";
 import Category from "@/lib/models/Category";
 import mongoose from "mongoose";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { transactionSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 function normalise(t: any) {
   return {
@@ -136,6 +138,13 @@ export async function PUT(
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+    } catch {
+      // Ignore in non-edge environments
+    }
+
     return NextResponse.json(normalise(transaction as any));
   } catch (error) {
     console.error("Transaction PUT error:", error);
@@ -167,6 +176,13 @@ export async function DELETE(
 
     if (!deleted) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
+    }
+
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+    } catch {
+      // Ignore
     }
 
     return NextResponse.json({ message: "Transaction deleted successfully" });

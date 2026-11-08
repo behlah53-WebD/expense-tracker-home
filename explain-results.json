@@ -1,37 +1,42 @@
 {
   "transactions_paginated_date_desc": {
-    "indexUsed": "COLLSCAN",
-    "nReturned": 0,
-    "docsExamined": 0,
-    "keysExamined": 0,
-    "executionTimeMillis": 2
+    "indexUsed": "userId_1_date_-1",
+    "stage": "IXSCAN",
+    "nReturned": 10,
+    "docsExamined": 10,
+    "keysExamined": 10,
+    "executionTimeMillis": 0
   },
   "transactions_type_date": {
-    "indexUsed": "COLLSCAN",
-    "nReturned": 0,
-    "docsExamined": 0,
-    "keysExamined": 0,
+    "indexUsed": "userId_1_type_1_date_-1",
+    "stage": "IXSCAN",
+    "nReturned": 10,
+    "docsExamined": 10,
+    "keysExamined": 10,
     "executionTimeMillis": 0
   },
   "transactions_summary_all_income": {
-    "indexUsed": "COLLSCAN",
-    "nReturned": 0,
-    "docsExamined": 0,
-    "keysExamined": 0,
+    "indexUsed": "userId_1_type_1_date_-1",
+    "stage": "IXSCAN",
+    "nReturned": 9,
+    "docsExamined": 9,
+    "keysExamined": 9,
     "executionTimeMillis": 0
   },
   "categories_by_userId_type": {
-    "indexUsed": "COLLSCAN",
-    "nReturned": 0,
-    "docsExamined": 0,
-    "keysExamined": 0,
+    "indexUsed": "userId_1_type_1_name_1",
+    "stage": "IXSCAN",
+    "nReturned": 9,
+    "docsExamined": 9,
+    "keysExamined": 9,
     "executionTimeMillis": 0
   },
   "budgets_by_month_year": {
-    "indexUsed": "COLLSCAN",
-    "nReturned": 0,
-    "docsExamined": 0,
-    "keysExamined": 0,
+    "indexUsed": "userId_1_month_1_year_1",
+    "stage": "IXSCAN",
+    "nReturned": 6,
+    "docsExamined": 6,
+    "keysExamined": 6,
     "executionTimeMillis": 0
   }
 }

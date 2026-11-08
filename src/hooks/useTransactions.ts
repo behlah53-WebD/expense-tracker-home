@@ -38,6 +38,9 @@ export function useCreateTransaction() {
   const mutateAsync = async (data: TransactionInput) => {
     try {
       const res = await createTx(data).unwrap();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:mutation"));
+      }
       toast.success(
         `${res.type === "INCOME" ? "Income" : "Expense"} of ₹${res.amount.toLocaleString("en-IN")} recorded!`
       );
@@ -61,6 +64,9 @@ export function useUpdateTransaction() {
   const mutateAsync = async ({ id, data }: { id: string; data: TransactionInput }) => {
     try {
       const res = await updateTx({ id, data }).unwrap();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:mutation"));
+      }
       toast.success("Transaction updated successfully!");
       return res;
     } catch (err: any) {
@@ -82,6 +88,9 @@ export function useDeleteTransaction() {
   const mutateAsync = async (id: string) => {
     try {
       const res = await deleteTx(id).unwrap();
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:mutation"));
+      }
       toast.success("Transaction deleted");
       return res;
     } catch (err: any) {

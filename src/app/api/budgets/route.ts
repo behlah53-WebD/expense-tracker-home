@@ -5,9 +5,11 @@ import Budget from "@/lib/models/Budget";
 import Category from "@/lib/models/Category";
 import Transaction from "@/lib/models/Transaction";
 import mongoose from "mongoose";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { budgetSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
   try {
@@ -146,6 +148,13 @@ export async function POST(req: Request) {
       .lean();
 
     const b = budget as any;
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+    } catch {
+      // Ignore
+    }
+
     return NextResponse.json({
       id: b._id.toString(),
       limit: b.limit,
@@ -194,6 +203,13 @@ export async function DELETE(req: Request) {
 
     if (!deleted) {
       return NextResponse.json({ error: "Budget not found" }, { status: 404 });
+    }
+
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+    } catch {
+      // Ignore
     }
 
     return NextResponse.json({ message: "Budget deleted successfully" });

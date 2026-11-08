@@ -18,7 +18,7 @@ import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./sidebar-context";
 import { usePrefetch } from "@/lib/store/api/baseApi";
-import { useSummary } from "@/hooks/useReports";
+import { useDashboard, prefetchDashboard } from "@/hooks/useDashboard";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -78,18 +78,15 @@ export function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { isExpanded, toggleSidebar } = useSidebar();
-  const { data: summary } = useSummary();
+  const { data: dashboardData } = useDashboard();
 
-  const prefetchSummary = usePrefetch("getSummary");
-  const prefetchMonthly = usePrefetch("getMonthlyTrend");
   const prefetchTransactions = usePrefetch("getTransactions");
   const prefetchCategories = usePrefetch("getCategories");
   const prefetchBudgets = usePrefetch("getBudgets");
 
   const handlePrefetch = (href: string) => {
     if (href === "/dashboard") {
-      prefetchSummary();
-      prefetchMonthly();
+      void prefetchDashboard();
     } else if (href === "/transactions") {
       prefetchTransactions({ limit: 10, sort: "date-desc" });
     } else if (href === "/settings") {
@@ -102,7 +99,7 @@ export function Sidebar() {
     () => NAV_ITEMS.findIndex(i => pathname?.startsWith(i.href)),
     [pathname]
   );
-  const savingsRate = Math.round(summary?.currentMonth?.savingsRate || 0);
+  const savingsRate = Math.round(dashboardData?.summary?.currentMonth?.savingsRate || 0);
 
   return (
     /* Outer shell keeps the original footprint (w-64 / w-20) so your page margins don't change */

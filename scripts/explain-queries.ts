@@ -2,7 +2,7 @@
  * scripts/explain-queries.ts
  *
  * Run this script to get query plans for the slowest queries.
- * Usage: npx tsx scripts/explain-queries.ts
+ * Usage: npx tsx --env-file=.env scripts/explain-queries.ts
  *
  * Output: a JSON file with execution stats for each key query.
  */
@@ -12,6 +12,32 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 
 const MONGODB_URI = process.env.MONGODB_URI!;
+
+function extractIndexInfo(stage: any): { stage: string; indexName: string } {
+  if (!stage) return { stage: "UNKNOWN", indexName: "COLLSCAN ⚠️" };
+
+  if (stage.stage === "IXSCAN") {
+    return { stage: "IXSCAN", indexName: stage.indexName || "UNKNOWN_INDEX" };
+  }
+
+  if (stage.stage === "COLLSCAN") {
+    return { stage: "COLLSCAN", indexName: "COLLSCAN ⚠️" };
+  }
+
+  if (stage.inputStage) {
+    const res = extractIndexInfo(stage.inputStage);
+    if (res.stage !== "UNKNOWN") return res;
+  }
+
+  if (Array.isArray(stage.inputStages)) {
+    for (const sub of stage.inputStages) {
+      const res = extractIndexInfo(sub);
+      if (res.stage !== "UNKNOWN" && res.stage !== "COLLSCAN") return res;
+    }
+  }
+
+  return { stage: stage.stage || "UNKNOWN", indexName: stage.indexName || "COLLSCAN ⚠️" };
+}
 
 async function main() {
   if (!MONGODB_URI) {
@@ -24,9 +50,8 @@ async function main() {
 
   console.log("Connected. Running explain() on key queries...\n");
 
-  // Use a real userId from your DB for meaningful explain output.
-  // Replace this with an actual ObjectId from your transactions collection.
-  const SAMPLE_USER_ID = new mongoose.Types.ObjectId("000000000000000000000001");
+  const users = await db.collection("users").find({}, { limit: 1 }).toArray();
+  const SAMPLE_USER_ID = users[0]?._id ?? new mongoose.Types.ObjectId("000000000000000000000001");
 
   const queries: Array<{ name: string; collection: string; filter: object; sort?: object }> = [
     {
@@ -62,7 +87,6 @@ async function main() {
   const results: Record<string, object> = {};
 
   for (const q of queries) {
-    const coll = db.collection(q.collection);
     const explainCmd: Record<string, unknown> = {
       find: q.collection,
       filter: q.filter,
@@ -76,16 +100,19 @@ async function main() {
     });
 
     const stats = plan.executionStats ?? {};
+    const { stage, indexName } = extractIndexInfo(plan.queryPlanner?.winningPlan);
+
     console.log(`\n── ${q.name} ──`);
-    console.log(`  winningPlan stage    : ${plan.queryPlanner?.winningPlan?.stage}`);
-    console.log(`  indexName            : ${plan.queryPlanner?.winningPlan?.inputStage?.indexName ?? "COLLSCAN ⚠️"}`);
+    console.log(`  winningPlan stage    : ${plan.queryPlanner?.winningPlan?.stage} (${stage})`);
+    console.log(`  indexName            : ${indexName}`);
     console.log(`  nReturned            : ${stats.nReturned}`);
     console.log(`  totalDocsExamined    : ${stats.totalDocsExamined}`);
     console.log(`  totalKeysExamined    : ${stats.totalKeysExamined}`);
     console.log(`  executionTimeMillis  : ${stats.executionTimeMillis} ms`);
 
     results[q.name] = {
-      indexUsed: plan.queryPlanner?.winningPlan?.inputStage?.indexName ?? "COLLSCAN",
+      indexUsed: indexName,
+      stage,
       nReturned: stats.nReturned,
       docsExamined: stats.totalDocsExamined,
       keysExamined: stats.totalKeysExamined,
@@ -104,4 +131,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

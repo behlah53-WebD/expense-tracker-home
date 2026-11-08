@@ -10,6 +10,7 @@ import { loginSchema, LoginInput } from "@/lib/validators";
 import { AuthVisualHero } from "@/components/auth/auth-visual-hero";
 import { Eye, EyeOff, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { prefetchDashboard } from "@/hooks/useDashboard";
 
 function LoginForm() {
   const router = useRouter();
@@ -51,6 +52,7 @@ function LoginForm() {
       }
 
       toast.success("Welcome back to Aurora Ledger!");
+      void prefetchDashboard();
       router.push(callbackUrl);
       router.refresh();
     } catch {

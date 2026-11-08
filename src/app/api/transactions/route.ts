@@ -4,9 +4,11 @@ import connectDB from "@/lib/mongodb";
 import Transaction from "@/lib/models/Transaction";
 import Category from "@/lib/models/Category";
 import mongoose from "mongoose";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { transactionSchema, transactionFilterSchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 /** Normalise a lean transaction document to the API shape */
 function normalise(t: any) {
@@ -194,6 +196,14 @@ export async function POST(req: Request) {
       .select("amount type note date recurring categoryId userId createdAt updatedAt")
       .populate("categoryId", "name color icon type")
       .lean();
+
+    // Invalidate dashboard server cache
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+    } catch {
+      // In non-Next request context, ignore
+    }
 
     return NextResponse.json(normalise(populated as any), { status: 201 });
   } catch (error) {

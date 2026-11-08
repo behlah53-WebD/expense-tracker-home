@@ -24,6 +24,7 @@ import mongoose from "mongoose";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+export const maxDuration = 10;
 
 export async function GET() {
   const start = Date.now();

@@ -88,4 +88,12 @@ export async function connectDB(): Promise<typeof mongoose> {
   return cached.conn;
 }
 
+// ── Eager module-level connection trigger in server environments ────────────
+if (process.env.MONGODB_URI && !cached.promise && typeof window === "undefined") {
+  connectDB().catch((err) => {
+    // Non-blocking background attempt; will re-attempt on request if needed
+    console.warn("[DB] Background module-level pre-connect notice:", (err as Error).message);
+  });
+}
+
 export default connectDB;
