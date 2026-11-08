@@ -45,15 +45,24 @@ export async function GET(req: Request) {
           $group: {
             _id: null,
             totalIncome: {
-              $sum: { $cond: [{ $eq: ["$type", "INCOME"] }, "$amount", 0] },
+              $sum: {
+                $cond: [{ $eq: ["$type", "INCOME"] }, "$amount", 0],
+              },
             },
             totalExpense: {
-              $sum: { $cond: [{ $eq: ["$type", "EXPENSE"] }, "$amount", 0] },
+              $sum: {
+                $cond: [{ $eq: ["$type", "EXPENSE"] }, "$amount", 0],
+              },
             },
             currentIncome: {
               $sum: {
                 $cond: [
-                  { $and: [{ $eq: ["$type", "INCOME"] }, { $gte: ["$date", startOfCurrentMonth]] }],
+                  {
+                    $and: [
+                      { $eq: ["$type", "INCOME"] },
+                      { $gte: ["$date", startOfCurrentMonth] },
+                    ],
+                  },
                   "$amount",
                   0,
                 ],
@@ -62,7 +71,12 @@ export async function GET(req: Request) {
             currentExpense: {
               $sum: {
                 $cond: [
-                  { $and: [{ $eq: ["$type", "EXPENSE"] }, { $gte: ["$date", startOfCurrentMonth]] }],
+                  {
+                    $and: [
+                      { $eq: ["$type", "EXPENSE"] },
+                      { $gte: ["$date", startOfCurrentMonth] },
+                    ],
+                  },
                   "$amount",
                   0,
                 ],

@@ -62,10 +62,12 @@ export async function GET(req: Request) {
       headers: {
         // Client may cache for 60 s; CDN/proxy may cache for 30 s
         "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        "X-Response-Time": `${totalMs}ms`,
+        "X-Auth-Ms": `${authMs}ms`,
+        "X-DB-Connect-Ms": `${dbConnectMs}ms`,
       },
-      timing: { authMs, dbConnectMs, totalMs },
     });
-  } catch (error) {
+} catch (error) {
     console.error("Categories GET error:", error);
     return NextResponse.json({ error: "Failed to fetch categories" }, { status: 500 });
   }

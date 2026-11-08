@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import dns from "dns";
-import { once } from "events";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -15,21 +14,6 @@ declare global {
 
 const cached: MongooseCache = global.mongooseCache ?? { conn: null, promise: null, connectTimeMs: 0 };
 global.mongooseCache = cached;
-
-// ── Module-level connection: connect once at import, reuse across invocations ──
-let moduleConnected = false;
-
-once(globalThis, "connectDB", () => {
-  if (moduleConnected) return;
-  moduleConnected = true;
-});
-
-function once(obj: any, event: string, fn: () => void) {
-  // Simple once guard for Node/serverless idempotency
-  if (obj[event]) return;
-  obj[event] = true;
-  fn();
-}
 
 export async function connectDB(): Promise<typeof mongoose> {
   const uri = process.env.MONGODB_URI;
@@ -73,7 +57,7 @@ export async function connectDB(): Promise<typeof mongoose> {
       maxIdleTimeMS: 60_000, // drop stale sockets after 60s of inactivity
 
       // ── Timeouts & Reliability ─────────────────────────────────────────
-      // Use resilient 30s timeouts for cloud Atlas clusters across varying networks
+      // Use resilient 5s timeouts for cloud Atlas clusters across varying networks
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45_000,
       connectTimeoutMS: 30_000,
