@@ -37,7 +37,10 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -47,7 +50,9 @@ export async function GET(
       return NextResponse.json({ error: "Invalid ID" }, { status: 400 });
     }
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     const transaction = await Transaction.findOne({ _id: id, userId: session.user.id })
       .select("amount type note date recurring categoryId userId createdAt updatedAt")
@@ -58,7 +63,12 @@ export async function GET(
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
 
-    return NextResponse.json(normalise(transaction as any));
+    const totalMs = Date.now() - t0;
+
+    return NextResponse.json({
+      ...normalise(transaction as any),
+      timing: { authMs, dbConnectMs, totalMs },
+    });
   } catch (error) {
     console.error("Transaction GET error:", error);
     return NextResponse.json({ error: "Failed to fetch transaction" }, { status: 500 });

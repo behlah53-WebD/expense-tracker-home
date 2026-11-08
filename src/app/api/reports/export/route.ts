@@ -21,12 +21,17 @@ const MAX_ROWS = 50_000;
 
 export async function GET(req: Request) {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
     const currency = (session.user as any).currency || "INR";
@@ -72,6 +77,8 @@ export async function GET(req: Request) {
       },
     });
 
+    const totalMs = Date.now() - t0;
+
     return new NextResponse(stream, {
       status: 200,
       headers: {
@@ -79,6 +86,9 @@ export async function GET(req: Request) {
         "Content-Disposition": `attachment; filename="aurora_ledger_${dateStr}.csv"`,
         "Transfer-Encoding": "chunked",
         "Cache-Control": "no-store",
+        "X-Response-Time": `${totalMs}ms`,
+        "X-Auth-Ms": `${authMs}ms`,
+        "X-DB-Connect-Ms": `${dbConnectMs}ms`,
       },
     });
   } catch (error) {

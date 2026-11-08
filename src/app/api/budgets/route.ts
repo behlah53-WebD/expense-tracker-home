@@ -11,7 +11,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -21,7 +24,9 @@ export async function GET(req: Request) {
     const month = parseInt(searchParams.get("month") || (now.getMonth() + 1).toString());
     const year = parseInt(searchParams.get("year") || now.getFullYear().toString());
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
 
@@ -86,7 +91,9 @@ export async function GET(req: Request) {
       };
     });
 
-    return NextResponse.json({ month, year, budgets: budgetsWithSpend });
+    const totalMs = Date.now() - t0;
+
+    return NextResponse.json({ month, year, budgets: budgetsWithSpend, timing: { authMs, dbConnectMs, totalMs } });
   } catch (error) {
     console.error("Budgets GET error:", error);
     return NextResponse.json({ error: "Failed to fetch budgets" }, { status: 500 });

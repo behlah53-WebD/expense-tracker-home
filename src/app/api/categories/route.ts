@@ -10,7 +10,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -18,7 +21,9 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
     const query: Record<string, unknown> = { userId };
@@ -51,11 +56,14 @@ export async function GET(req: Request) {
       _count: { transactions: countMap.get(c._id.toString()) || 0 },
     }));
 
+    const totalMs = Date.now() - t0;
+
     return NextResponse.json(result, {
       headers: {
         // Client may cache for 60 s; CDN/proxy may cache for 30 s
         "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
       },
+      timing: { authMs, dbConnectMs, totalMs },
     });
   } catch (error) {
     console.error("Categories GET error:", error);

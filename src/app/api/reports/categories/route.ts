@@ -19,7 +19,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -50,7 +53,9 @@ export async function GET(req: Request) {
 
     const matchStage: Record<string, unknown> = { userId, type, date: dateRange };
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     // ── Run group aggregation + top-5 fetch in parallel ───────────────────
     const [grouped, top5Raw] = await Promise.all([
@@ -83,6 +88,8 @@ export async function GET(req: Request) {
         .limit(5)
         .lean(),
     ]);
+
+    const totalMs = Date.now() - t0;
 
     const totalAmount = grouped.reduce((s: number, g: any) => s + g.amount, 0);
 
@@ -134,7 +141,7 @@ export async function GET(req: Request) {
       insights.push("Start tracking transactions to reveal AI-powered financial patterns and smart recommendations.");
     }
 
-    return NextResponse.json({ type, totalAmount, categories, top5Transactions, biggestCategory, insights });
+    return NextResponse.json({ type, totalAmount, categories, top5Transactions, biggestCategory, insights, timing: { authMs, dbConnectMs, totalMs } });
   } catch (error) {
     console.error("Reports categories error:", error);
     return NextResponse.json({ error: "Failed to fetch category report" }, { status: 500 });

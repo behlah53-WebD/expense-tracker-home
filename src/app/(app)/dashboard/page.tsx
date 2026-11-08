@@ -363,29 +363,69 @@ export default function DashboardPage() {
   const currency = (session?.user as any)?.currency || "INR";
   const firstName = ((session?.user?.name as string) || "").split(" ")[0];
 
-  const { data: summary } = useSummary();
-  const { data: monthlyData } = useMonthlyTrend();
-  const { data: categoryData } = useCategoryBreakdown({ type: "EXPENSE" });
+// Fetch all dashboard data from SINGLE endpoint /api/dashboard
+  const dashboardRef = React.useRef<any>(null);
+  const [didMount, setDidMount] = useState(false);
+
+  React.useEffect(() => {
+    async function fetchDashboard() {
+      try {
+        const res = await fetch("/api/dashboard", {
+          cache: "no-cache",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error("Failed to fetch dashboard");
+        const data = await res.json();
+        dashboardRef.current = data;
+        setDidMount(true);
+      } catch (err) {
+        console.error("Dashboard fetch error:", err);
+      }
+    }
+
+    fetchDashboard();
+
+    // Refetch on app focus
+    const handleFocus = () => {
+      fetchDashboard();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => window.removeEventListener("focus", handleFocus);
+  }, []);
+
+  const dashboard = dashboardRef.current;
 
   // client-only clock avoids SSR/hydration mismatch
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
 
   const m = useMemo(() => {
+    if (dashboard) {
+      return {
+        totalBalance: dashboard.totalBalance || 0,
+        income: dashboard.currentMonth?.income || 0,
+        expense: dashboard.currentMonth?.expense || 0,
+        netSavings: dashboard.currentMonth?.netSavings || 0,
+        savingsRate: dashboard.currentMonth?.savingsRate || 0,
+        incomeDelta: dashboard.deltas?.income || 0,
+        expenseDelta: dashboard.deltas?.expense || 0,
+        savingsDelta: dashboard.deltas?.savings || 0,
+      };
+    }
+    const { data: summary } = useSummary();
     const cm = summary?.currentMonth;
-    const income = cm?.income || 0;
-    const expense = cm?.expense || 0;
     return {
       totalBalance: summary?.totalBalance || 0,
-      income,
-      expense,
+      income: cm?.income || 0,
+      expense: cm?.expense || 0,
       netSavings: cm?.netSavings || 0,
       savingsRate: cm?.savingsRate || 0,
       incomeDelta: summary?.deltas?.income || 0,
       expenseDelta: summary?.deltas?.expense || 0,
       savingsDelta: summary?.deltas?.savings || 0,
     };
-  }, [summary]);
+  }, [dashboard]);
 
   const fmt = useMemo(() => makeFmt(currency), [currency]);
 
@@ -421,7 +461,7 @@ export default function DashboardPage() {
     [m]
   );
 
-  const topCategory = categoryData?.categories?.[0];
+  const topCategory = dashboard?.categories?.[0] || useCategoryBreakdown({ type: "EXPENSE" })?.data?.categories?.[0];
   const dailyBurn = m.expense / Math.max(day, 1);
   const runwayDays =
     dailyBurn > 0 ? Math.floor(m.totalBalance / dailyBurn) : null;
@@ -483,16 +523,16 @@ export default function DashboardPage() {
   }, [m, topCategory, runwayDays]);
 
   const incomeSeries = useMemo(
-    () => toSeries(monthlyData, "income", m.income),
-    [monthlyData, m.income]
+    () => toSeries(useMonthlyTrend().data, "income", m.income),
+    [m.income]
   );
   const expenseSeries = useMemo(
-    () => toSeries(monthlyData, "expense", m.expense),
-    [monthlyData, m.expense]
+    () => toSeries(useMonthlyTrend().data, "expense", m.expense),
+    [m.expense]
   );
 
-  const categories = categoryData?.categories || [];
-  const transactions = summary?.recentTransactions || [];
+  const categories = dashboard?.categories || dashboardRef.current?.categories;
+  const transactions = dashboard?.recentTransactions || dashboardRef.current?.recentTransactions;
 
   return (
     <div className="dx-root relative isolate space-y-6">
@@ -664,12 +704,12 @@ export default function DashboardPage() {
 
         {/* Charts */}
         <div className="sm:col-span-2 lg:col-span-8">
-          <GlowingCashFlow data={monthlyData} currency={currency} />
+          <GlowingCashFlow data={useMonthlyTrend().data} currency={currency} />
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <CategoryDonut
-            categories={categories}
-            totalAmount={categoryData?.totalAmount || 0}
+            categories={dashboard?.categories || useCategoryBreakdown({ type: "EXPENSE" })?.data?.categories || []}
+            totalAmount={dashboard?.totalBalance || useSummary().data?.totalBalance || 0}
             title="Spending by Category"
             currency={currency}
           />

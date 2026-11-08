@@ -8,7 +8,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -16,7 +19,9 @@ export async function GET(req: Request) {
     const userId = new mongoose.Types.ObjectId(session.user.id);
     const now = new Date();
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
@@ -27,6 +32,8 @@ export async function GET(req: Request) {
       .select("amount type date")
       .sort({ date: 1 })
       .lean();
+
+    const totalMs = Date.now() - t0;
 
     const monthNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -75,6 +82,7 @@ export async function GET(req: Request) {
       "12M": monthlyData,
       "30D": thirtyDaysData,
       "7D": sevenDaysData,
+      timing: { authMs, dbConnectMs, totalMs },
     });
   } catch (error) {
     console.error("Reports monthly error:", error);

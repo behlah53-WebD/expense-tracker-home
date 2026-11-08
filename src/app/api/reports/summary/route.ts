@@ -24,7 +24,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
+    const t0 = Date.now();
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -38,7 +41,9 @@ export async function GET() {
     const startOfLastMonth = new Date(currentYear, currentMonth - 1, 1);
     const endOfLastMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59, 999);
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     // ── Single aggregation replaces 4 separate queries ────────────────────
     // Uses indexes: { userId:1, type:1, date:-1 } and { userId:1, date:-1 }
@@ -124,6 +129,8 @@ export async function GET() {
         .lean(),
     ]);
 
+    const totalMs = Date.now() - t0;
+
     const b = buckets[0] ?? {
       totalIncome: 0,
       totalExpense: 0,
@@ -192,6 +199,7 @@ export async function GET() {
         savings: Math.round(savingsDelta * 10) / 10,
       },
       recentTransactions: normalizedRecent,
+      timing: { authMs, dbConnectMs, totalMs },
     });
   } catch (error) {
     console.error("Reports summary error:", error);

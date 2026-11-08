@@ -35,7 +35,11 @@ function normalise(t: any) {
 
 export async function GET(req: Request) {
   try {
+    const t0 = Date.now();
+
     const session = await auth();
+    const authMs = Date.now() - t0;
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -62,7 +66,9 @@ export async function GET(req: Request) {
 
     const { type, categoryId, from, to, q, page, limit, sort } = filterResult.data;
 
+    const t1 = Date.now();
     await connectDB();
+    const dbConnectMs = Date.now() - t1;
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
     const query: Record<string, unknown> = { userId };
@@ -83,13 +89,10 @@ export async function GET(req: Request) {
     }
 
     // ── Search: single category query (all matching IDs) then $or ──────────
-    // Before: separate Category.find() + reassemble — still one extra round-trip
-    // This is unavoidable unless we store denormalised category name on Transaction.
-    // We minimise cost by selecting only _id and using an index-covered query.
     if (q) {
       const matchingCats = await Category.find(
         { userId, name: { $regex: q, $options: "i" } },
-        { _id: 1 }   // projection: only _id (index-covered)
+        { _id: 1 }
       ).lean();
       const matchingCategoryIds = matchingCats.map((c) => c._id as mongoose.Types.ObjectId);
       query.$or = [
@@ -119,6 +122,8 @@ export async function GET(req: Request) {
 
     const totalPages = Math.ceil(totalCount / limit);
 
+    const totalMs = Date.now() - t0;
+
     return NextResponse.json({
       transactions: (transactions as any[]).map(normalise),
       pagination: {
@@ -127,6 +132,11 @@ export async function GET(req: Request) {
         totalCount,
         totalPages,
         hasMore: page < totalPages,
+      },
+      timing: {
+        authMs,
+        dbConnectMs,
+        totalMs,
       },
     });
   } catch (error) {
