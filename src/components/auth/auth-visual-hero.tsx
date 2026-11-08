@@ -131,7 +131,7 @@ export function AuthVisualHero({ compact = false }: { compact?: boolean }) {
           </span>
           <div className="flex items-baseline gap-1.5 lg:block lg:leading-tight">
             <span className="font-heading font-bold text-lg lg:text-2xl tracking-[-0.01em] text-[var(--text-heading)] lg:block">
-              Aurora
+              Expense Tracker
             </span>
             <span className="font-heading text-xs text-[var(--text-muted)] lg:block">
               Ledger
