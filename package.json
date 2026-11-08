@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "tsc --noEmit",
     "db:seed": "npx tsx scripts/seed.ts",
     "generate-icons": "npx tsx scripts/generate-icons.ts"
   },

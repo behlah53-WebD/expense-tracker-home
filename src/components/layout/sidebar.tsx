@@ -195,7 +195,7 @@ export function Sidebar() {
               <span
                 aria-hidden="true"
                 className={cn(
-                  "absolute left-0 right-0 rounded-2xl pointer-events-none transition-[transform,opacity] duration-[420ms] ease-[cubic-bezier(.3,1.35,.5,1)] motion-reduce:transition-none",
+                  "absolute left-0 right-0 rounded-2xl pointer-events-none transition-[transform,opacity] motion-reduce:transition-none",
                   "bg-[linear-gradient(100deg,color-mix(in_srgb,var(--primary)_32%,transparent),color-mix(in_srgb,var(--accent-cyan)_12%,transparent))]",
                   "border border-[var(--primary)]/45 shadow-[0_0_26px_-6px_var(--primary)]",
                   activeIndex < 0 && "opacity-0"
@@ -203,6 +203,8 @@ export function Sidebar() {
                 style={{
                   height: ITEM_H,
                   transform: `translateY(${Math.max(activeIndex, 0) * PITCH}px)`,
+                  transitionDuration: "420ms",
+                  transitionTimingFunction: "cubic-bezier(0.3, 1.35, 0.5, 1)",
                 }}
               >
                 <span className="absolute -left-[11px] top-1/2 -translate-y-1/2 w-1 h-5 rounded-full bg-[var(--accent-cyan)] shadow-[0_0_12px_var(--accent-cyan)]" />

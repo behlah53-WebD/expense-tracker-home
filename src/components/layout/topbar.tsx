@@ -247,7 +247,8 @@ export function Topbar({ onOpenAddModal, onSearch }: TopbarProps) {
                   />
                   <span
                     aria-hidden="true"
-                    className={`absolute top-1 left-1 w-8 h-8 rounded-full grid place-items-center bg-[var(--bg-elevated)] border border-[var(--primary)]/40 shadow-[0_0_14px_-2px_var(--primary)] transition-transform duration-300 ease-[cubic-bezier(.3,1.35,.5,1)] motion-reduce:transition-none ${
+                    style={{ transitionTimingFunction: "cubic-bezier(0.3, 1.35, 0.5, 1)" }}
+                    className={`absolute top-1 left-1 w-8 h-8 rounded-full grid place-items-center bg-[var(--bg-elevated)] border border-[var(--primary)]/40 shadow-[0_0_14px_-2px_var(--primary)] transition-transform duration-300 motion-reduce:transition-none ${
                       isDark ? "translate-x-[28px]" : "translate-x-0"
                     }`}
                   >

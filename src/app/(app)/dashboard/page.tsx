@@ -71,7 +71,7 @@ const clamp = (n: number, min: number, max: number) =>
 const makeFmt = (currency: string) => {
   const f = new Intl.NumberFormat("en-IN", {
     style: "currency",
-    currency,
+    currency: currency || "INR",
     maximumFractionDigits: 0,
   });
   return (n: number) => f.format(Math.round(n));
@@ -79,12 +79,15 @@ const makeFmt = (currency: string) => {
 
 /** Pull a numeric series out of the monthly trend; falls back to a flat line ending at `last`. */
 const toSeries = (rows: any, key: string, last: number): number[] => {
-  const s = Array.isArray(rows)
+  const list = Array.isArray(rows)
     ? rows
-        .map(r => Number(r?.[key]))
-        .filter(v => Number.isFinite(v))
-        .slice(-7)
+    : Array.isArray(rows?.["12M"])
+    ? rows["12M"]
     : [];
+  const s = list
+    .map((r: any) => Number(r?.[key]))
+    .filter((v: number) => Number.isFinite(v))
+    .slice(-7);
   return s.length >= 2 ? s : [last, last];
 };
 
@@ -363,69 +366,30 @@ export default function DashboardPage() {
   const currency = (session?.user as any)?.currency || "INR";
   const firstName = ((session?.user?.name as string) || "").split(" ")[0];
 
-// Fetch all dashboard data from SINGLE endpoint /api/dashboard
-  const dashboardRef = React.useRef<any>(null);
-  const [didMount, setDidMount] = useState(false);
-
-  React.useEffect(() => {
-    async function fetchDashboard() {
-      try {
-        const res = await fetch("/api/dashboard", {
-          cache: "no-cache",
-          headers: { Accept: "application/json" },
-        });
-        if (!res.ok) throw new Error("Failed to fetch dashboard");
-        const data = await res.json();
-        dashboardRef.current = data;
-        setDidMount(true);
-      } catch (err) {
-        console.error("Dashboard fetch error:", err);
-      }
-    }
-
-    fetchDashboard();
-
-    // Refetch on app focus
-    const handleFocus = () => {
-      fetchDashboard();
-    };
-    window.addEventListener("focus", handleFocus);
-
-    return () => window.removeEventListener("focus", handleFocus);
-  }, []);
-
-  const dashboard = dashboardRef.current;
+  // Top-level hooks - NEVER called inside useMemo or JSX
+  const { data: summary } = useSummary();
+  const { data: monthlyData } = useMonthlyTrend();
+  const { data: categoryData } = useCategoryBreakdown({ type: "EXPENSE" });
 
   // client-only clock avoids SSR/hydration mismatch
   const [now, setNow] = useState<Date | null>(null);
   useEffect(() => setNow(new Date()), []);
 
   const m = useMemo(() => {
-    if (dashboard) {
-      return {
-        totalBalance: dashboard.totalBalance || 0,
-        income: dashboard.currentMonth?.income || 0,
-        expense: dashboard.currentMonth?.expense || 0,
-        netSavings: dashboard.currentMonth?.netSavings || 0,
-        savingsRate: dashboard.currentMonth?.savingsRate || 0,
-        incomeDelta: dashboard.deltas?.income || 0,
-        expenseDelta: dashboard.deltas?.expense || 0,
-        savingsDelta: dashboard.deltas?.savings || 0,
-      };
-    }
-    const { data: summary } = useSummary();
     const cm = summary?.currentMonth;
+    const income = cm?.income || 0;
+    const expense = cm?.expense || 0;
     return {
       totalBalance: summary?.totalBalance || 0,
-      income: cm?.income || 0,
-      expense: cm?.expense || 0,
+      income,
+      expense,
       netSavings: cm?.netSavings || 0,
       savingsRate: cm?.savingsRate || 0,
       incomeDelta: summary?.deltas?.income || 0,
       expenseDelta: summary?.deltas?.expense || 0,
       savingsDelta: summary?.deltas?.savings || 0,
     };
-  }, [dashboard]);
+  }, [summary]);
 
   const fmt = useMemo(() => makeFmt(currency), [currency]);
 
@@ -461,7 +425,7 @@ export default function DashboardPage() {
     [m]
   );
 
-  const topCategory = dashboard?.categories?.[0] || useCategoryBreakdown({ type: "EXPENSE" })?.data?.categories?.[0];
+  const topCategory = categoryData?.categories?.[0];
   const dailyBurn = m.expense / Math.max(day, 1);
   const runwayDays =
     dailyBurn > 0 ? Math.floor(m.totalBalance / dailyBurn) : null;
@@ -523,16 +487,16 @@ export default function DashboardPage() {
   }, [m, topCategory, runwayDays]);
 
   const incomeSeries = useMemo(
-    () => toSeries(useMonthlyTrend().data, "income", m.income),
-    [m.income]
+    () => toSeries(monthlyData?.["12M"] || monthlyData, "income", m.income),
+    [monthlyData, m.income]
   );
   const expenseSeries = useMemo(
-    () => toSeries(useMonthlyTrend().data, "expense", m.expense),
-    [m.expense]
+    () => toSeries(monthlyData?.["12M"] || monthlyData, "expense", m.expense),
+    [monthlyData, m.expense]
   );
 
-  const categories = dashboard?.categories || dashboardRef.current?.categories;
-  const transactions = dashboard?.recentTransactions || dashboardRef.current?.recentTransactions;
+  const categories = categoryData?.categories || [];
+  const transactions = summary?.recentTransactions || [];
 
   return (
     <div className="dx-root relative isolate space-y-6">
@@ -704,12 +668,12 @@ export default function DashboardPage() {
 
         {/* Charts */}
         <div className="sm:col-span-2 lg:col-span-8">
-          <GlowingCashFlow data={useMonthlyTrend().data} currency={currency} />
+          <GlowingCashFlow data={monthlyData} currency={currency} />
         </div>
         <div className="sm:col-span-2 lg:col-span-4">
           <CategoryDonut
-            categories={dashboard?.categories || useCategoryBreakdown({ type: "EXPENSE" })?.data?.categories || []}
-            totalAmount={dashboard?.totalBalance || useSummary().data?.totalBalance || 0}
+            categories={categories}
+            totalAmount={categoryData?.totalAmount || 0}
             title="Spending by Category"
             currency={currency}
           />
