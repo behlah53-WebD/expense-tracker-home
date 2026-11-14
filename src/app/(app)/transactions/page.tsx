@@ -1,8 +1,10 @@
 "use client";
 
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { GlassCard } from "@/components/ui/glass-card";
+import { CountUpAmount } from "@/components/ui/count-up-amount";
 import { TransactionDrawer } from "@/components/forms/transaction-drawer";
 import { CategoryIcon } from "@/components/ui/category-icon";
 import {
@@ -54,44 +56,6 @@ type Group = {
 };
 
 /* ───────────── pieces ───────────── */
-
-const SummaryTile = memo(function SummaryTile(props: {
-  label: string;
-  value: string;
-  tone: "in" | "out" | "net";
-  Icon: React.ElementType;
-}) {
-  const { label, value, tone, Icon } = props;
-  const color =
-    tone === "in"
-      ? "var(--aurora-mint)"
-      : tone === "out"
-        ? "var(--aurora-coral)"
-        : "var(--primary)";
-  return (
-    <div className="glass-card relative overflow-hidden px-4 py-3.5 flex items-center gap-3">
-      <span
-        className="grid place-items-center w-10 h-10 rounded-xl shrink-0"
-        style={{
-          background: `color-mix(in srgb, ${color} 16%, transparent)`,
-          color,
-        }}
-      >
-        <Icon className="w-5 h-5" aria-hidden="true" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-[11px] text-[var(--text-muted)]">{label}</p>
-        <p className="font-mono font-bold text-base sm:text-lg tabular-nums truncate text-[var(--text-primary)]">
-          {value}
-        </p>
-      </div>
-      <span
-        className="absolute inset-x-0 bottom-0 h-0.5 opacity-70"
-        style={{ background: `linear-gradient(90deg, ${color}, transparent)` }}
-      />
-    </div>
-  );
-});
 
 const TxSlip = memo(function TxSlip(props: {
   tx: TransactionWithCategory;
@@ -403,152 +367,232 @@ export default function TransactionsPage() {
         .dx-shimmer::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
           background:linear-gradient(90deg,transparent,rgba(255,255,255,.07),transparent);animation:dx-sh 1.4s infinite}
         @keyframes dx-sh{to{transform:translateX(100%)}}
+        @keyframes shine{to{transform:translateX(220%)}}
         @media (prefers-reduced-motion:reduce){.dx-shimmer::after{animation:none}}
       `}</style>
 
       {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="font-heading font-bold text-[clamp(26px,4vw,36px)] tracking-[-0.02em] leading-tight text-[var(--text-primary)]">
+      <header className="flex items-center justify-between gap-3 px-2">
+        <div className="flex items-center gap-2">
+          <h1 className="font-heading font-bold text-xl tracking-[-0.02em] text-[var(--text-primary)]">
             Transactions
           </h1>
-          <p className="text-sm text-[var(--text-secondary)] mt-1">
-            <span className="font-mono font-semibold text-[var(--text-primary)]">
-              {pagination.totalCount}
-            </span>{" "}
-            records
-            {activeCount > 0 ? " match your filters" : " in your ledger"}
-          </p>
+          <span className="relative inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--border)]/60 bg-white/5 text-[10px] font-semibold text-[var(--text-muted)] shadow-sm">
+            {pagination.totalCount} record{pagination.totalCount === 1 ? "" : "s"}
+          </span>
         </div>
         <button
           onClick={() => {
             setEditingTx(null);
             setIsDrawerOpen(true);
           }}
-          className="btn-primary-glow h-11 px-5 text-[13px] font-semibold flex items-center justify-center gap-2 shrink-0 self-start sm:self-auto"
+          aria-label="Add transaction"
+          className="relative w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 shadow-[0_0_20px_rgba(79,70,229,0.45)] text-white transition-all hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-[var(--primary)]/50 group"
         >
-          <Plus className="w-4 h-4 stroke-[2.5]" aria-hidden="true" />
-          Add transaction
+          <Plus className="w-5 h-5 stroke-[2.5] relative z-10" aria-hidden="true" />
+          <span
+            className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -skew-x-12 -translate-x-[120%] group-hover:animate-[shine_1.5s_infinite]"
+            aria-hidden="true"
+          />
         </button>
       </header>
 
-      {/* Page totals */}
-      <section
-        aria-label="Totals for entries on this page"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-      >
-        <SummaryTile
-          label="Money in (this page)"
-          value={formatCurrency(totals.inc, currency)}
-          tone="in"
-          Icon={ArrowDownLeft}
-        />
-        <SummaryTile
-          label="Money out (this page)"
-          value={formatCurrency(totals.out, currency)}
-          tone="out"
-          Icon={ArrowUpRight}
-        />
-        <SummaryTile
-          label="Net (this page)"
-          value={`${totals.net >= 0 ? "+" : "−"}${formatCurrency(Math.abs(totals.net), currency)}`}
-          tone="net"
-          Icon={Scale}
-        />
+      {/* Unified summary */}
+      <section aria-label="Totals for entries on this page" className="mt-3">
+        <div className="glass-card relative overflow-hidden rounded-[18px] border border-[var(--border)]/60 bg-white/5 backdrop-blur-md p-4 shadow-xl ring-1 ring-[var(--border)]/30">
+          <span className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 via-[var(--primary)] to-rose-400 opacity-70" />
+
+          <div className="flex flex-col gap-3">
+              {/* Net hero */}
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
+                    Net Balance
+                  </p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-[13px] text-[var(--text-muted)] font-medium">₹</span>
+                  <CountUpAmount
+                    amount={totals.net}
+                    currency={currency}
+                    className="text-[34px] font-bold tabular-nums tracking-tight"
+                    duration={900}
+                  />
+                </div>
+                </div>
+              </div>
+
+            {/* In / Out chips */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)]/40 bg-white/5">
+                <div className="w-5 h-5 rounded-lg grid place-items-center bg-emerald-500/10 text-emerald-400">
+                  <ArrowDownLeft className="w-2.5 h-2.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
+                    Money In
+                  </p>
+                  <span className="text-[13px] font-mono font-bold tabular-nums text-emerald-400">
+                    <CountUpAmount
+                      amount={totals.inc}
+                      currency={currency}
+                      className="text-[13px]"
+                      compact
+                    />
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)]/40 bg-white/5">
+                <div className="w-5 h-5 rounded-lg grid place-items-center bg-rose-500/10 text-rose-400">
+                  <ArrowUpRight className="w-2.5 h-2.5" aria-hidden="true" />
+                </div>
+                <div className="flex flex-col">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
+                    Money Out
+                  </p>
+                  <span className="text-[13px] font-mono font-bold tabular-nums text-rose-400">
+                    <CountUpAmount
+                      amount={totals.out}
+                      currency={currency}
+                      className="text-[13px]"
+                      compact
+                    />
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full h-[6px] rounded-full bg-white/10 overflow-hidden border border-white/10">
+              <motion.div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-[var(--primary)] to-rose-400 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+                animate={{
+                  width:
+                    totals.inc + totals.out === 0
+                      ? 50
+                      : Math.min(100, (totals.inc / (totals.inc + totals.out)) * 100),
+                }}
+                transition={{ type: "spring", damping: 22, stiffness: 100 }}
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* One toolbar for every screen size */}
       <GlassCard className="p-3 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1">
-            <Search
-              className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              type="search"
-              placeholder="Search by note or category"
-              value={searchQuery}
-              onChange={e => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-              className={`glass-input w-full h-11 pl-10 pr-10 text-base md:text-sm focus:outline-none ${
-                searchQuery ? "pr-3" : ""
-              }`}
-              aria-label="Search transactions"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="relative flex-1 min-w-0">
+              <Search
+                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                type="search"
+                placeholder="Search by note or category"
+                value={searchQuery}
+                onChange={e => {
+                  setSearchQuery(e.target.value);
                   setPage(1);
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <div
-            role="group"
-            aria-label="Transaction type"
-            className="grid grid-cols-3 p-1 rounded-xl bg-white/5 border border-[var(--border)] md:w-[300px]"
-          >
-            {typeOptions.map(o => {
-              const active = type === o.value;
-              const bg =
-                o.value === "EXPENSE"
-                  ? "var(--aurora-coral)"
-                  : o.value === "INCOME"
-                    ? "var(--aurora-mint)"
-                    : "var(--primary)";
-              return (
+                className={`glass-input w-full h-10 pl-9 pr-8 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all ${
+                  searchQuery ? "pr-11" : ""
+                }`}
+                aria-label="Search transactions"
+              />
+              {searchQuery && (
                 <button
-                  key={o.label}
                   type="button"
-                  aria-pressed={active}
                   onClick={() => {
-                    setType(o.value);
+                    setSearchQuery("");
                     setPage(1);
                   }}
-                  className="h-9 rounded-lg text-xs font-semibold transition-colors"
-                  style={
-                    active
-                      ? {
-                          background: bg,
-                          color: o.value === "INCOME" ? "#05140d" : "#fff",
-                        }
-                      : { color: "var(--text-muted)" }
-                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                  aria-label="Clear search"
                 >
-                  {o.label}
+                  <X className="w-4 h-4" />
                 </button>
-              );
-            })}
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowFilters(v => !v)}
+              aria-expanded={showFilters}
+              aria-label="Filters"
+              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                advancedCount > 0 || showFilters
+                  ? "bg-[var(--primary)] text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]"
+                  : "bg-white/10 border border-[var(--border)]/40 text-[var(--text-muted)] hover:bg-white/20"
+              }`}
+            >
+              <SlidersHorizontal className="w-5 h-5" aria-hidden="true" />
+              {advancedCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              )}
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowFilters(v => !v)}
-            aria-expanded={showFilters}
-            className={`h-11 px-4 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-2 border transition-colors ${
-              advancedCount > 0 || showFilters
-                ? "border-[var(--primary)] text-[var(--primary)] bg-[var(--primary)]/10"
-                : "border-[var(--border)] text-[var(--text-secondary)] hover:bg-white/5"
-            }`}
-          >
-            <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
-            More filters
-            {advancedCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-[var(--primary)] text-white font-mono text-[10px] grid place-items-center">
-                {advancedCount}
-              </span>
-            )}
-          </button>
+          <div className="w-full md:w-auto flex-shrink-0">
+            <div
+              role="group"
+              aria-label="Transaction type"
+              className="relative inline-flex w-full items-center rounded-xl border border-[var(--border)]/40 bg-white/5 px-1"
+            >
+              <motion.div
+                className="absolute top-1 bottom-1 rounded-lg transition-all duration-200 ease-out"
+                animate={{
+                  left: type === undefined ? "1%" : type === "EXPENSE" ? "34%" : "67%",
+                  width: "31%",
+                }}
+                transition={{ type: "spring", damping: 25, stiffness: 120 }}
+                style={{
+                  background:
+                    type === undefined
+                      ? "var(--primary)"
+                      : type === "EXPENSE"
+                        ? "var(--aurora-coral)"
+                        : "var(--aurora-mint)",
+                }}
+              />
+              {typeOptions.map(o => {
+                const active = type === o.value;
+                const dotColor =
+                  o.value === "EXPENSE"
+                    ? "bg-rose-400"
+                    : o.value === "INCOME"
+                      ? "bg-emerald-400"
+                      : "bg-[var(--text-muted)]";
+                return (
+                  <button
+                    key={o.label}
+                    type="button"
+                    onClick={() => {
+                      setType(o.value);
+                      setPage(1);
+                    }}
+                    className="relative z-10 flex-1 h-8 rounded-lg text-[10px] font-semibold transition-all px-2"
+                    style={{
+                      color:
+                        active
+                          ? o.value === "INCOME"
+                            ? "#05140d"
+                            : "#fff"
+                          : "var(--text-muted)",
+                    }}
+                  >
+                    <span className="flex items-center gap-1">
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
+                        aria-hidden="true"
+                      />
+                      {o.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         {showFilters && (
