@@ -70,9 +70,17 @@ export default function SettingsPage() {
   const [deleteAccountMutation, { isLoading: isDeletingAccount }] =
     useDeleteAccountMutation();
 
+  // Category Delete Confirmation State
+  const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
+  const [deleteCatName, setDeleteCatName] = useState("");
+
   const { data: categories = [] } = useCategories();
   const createCat = useCreateCategory();
   const deleteCat = useDeleteCategory();
+
+  const deletingCategory = categories.find(c => c.id === deleteCatId);
+  const hasTransactions =
+    Boolean(deletingCategory?._count?.transactions && deletingCategory._count.transactions > 0);
 
   const { data: budgetData } = useBudgets();
   const saveBudget = useSaveBudget();
@@ -84,6 +92,10 @@ export default function SettingsPage() {
       if (e.key === "Escape") {
         if (isCatModalOpen) setIsCatModalOpen(false);
         if (isDeleteDialogOpen) setIsDeleteDialogOpen(false);
+        if (deleteCatId) {
+          setDeleteCatId(null);
+          setDeleteCatName("");
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -141,6 +153,22 @@ export default function SettingsPage() {
       });
       setIsCatModalOpen(false);
       setNewCatName("");
+    } catch {
+      // toast is handled in hook
+    }
+  };
+
+  // Handle Delete Category (with confirmation + transaction guard)
+  const handleDeleteCategory = async () => {
+    if (!deleteCatId) return;
+    try {
+      await deleteCat.mutateAsync(deleteCatId);
+      // If the deleted category was selected for a budget, clear the selection
+      if (selectedBudgetCat === deleteCatId) {
+        setSelectedBudgetCat("");
+      }
+      setDeleteCatId(null);
+      setDeleteCatName("");
     } catch {
       // toast is handled in hook
     }
@@ -488,7 +516,10 @@ export default function SettingsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => deleteCat.mutate(c.id)}
+                onClick={() => {
+                  setDeleteCatId(c.id);
+                  setDeleteCatName(c.name);
+                }}
                 className="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 w-10 h-10 flex items-center justify-center rounded-xl text-[var(--text-muted)] hover:text-expense transition-all"
                 title="Delete Category"
                 aria-label={`Delete category ${c.name}`}
@@ -749,6 +780,66 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Delete Category Confirmation Dialog */}
+      {deleteCatId && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          data-dialog="true"
+          aria-labelledby="delete-cat-dialog-title"
+          className="fixed inset-0 z-[80] bg-black/70 backdrop-blur-md flex items-end md:items-center justify-center p-0 md:p-4 animate-fade-in"
+          onClick={() => {
+            setDeleteCatId(null);
+            setDeleteCatName("");
+          }}
+        >
+          <div
+            className="glass-card w-full md:max-w-sm p-6 pb-[calc(28px+env(safe-area-inset-bottom,16px))] space-y-4 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-t-[28px] md:rounded-[24px] shadow-2xl relative z-10"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="md:hidden pt-1 pb-3 flex justify-center">
+              <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
+            </div>
+            <div className="w-12 h-12 rounded-2xl bg-[var(--aurora-coral)]/15 text-[var(--aurora-coral)] grid place-items-center mx-auto">
+              <Trash2 className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <div className="text-center">
+              <h3
+                id="delete-cat-dialog-title"
+                className="font-heading font-bold text-base text-[var(--text-primary)]"
+              >
+                Delete "{deleteCatName}"?
+              </h3>
+              <p className="text-sm text-[var(--text-muted)] mt-1">
+                This category will be removed from your settings and the
+                transaction popup. Transactions using it will become
+                {hasTransactions ? "uncategorized" : "unaffected"}.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setDeleteCatId(null);
+                  setDeleteCatName("");
+                }}
+                className="h-11 rounded-xl text-[13px] font-semibold glass-card hover:bg-[var(--surface-hover)] text-[var(--text-secondary)] transition-colors"
+              >
+                Keep it
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteCategory}
+                disabled={deleteCat.isPending}
+                className="h-11 rounded-xl text-[13px] font-semibold bg-[var(--aurora-coral)] hover:opacity-90 disabled:opacity-60 text-white transition-opacity"
+              >
+                {deleteCat.isPending ? "Deleting…" : "Delete"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

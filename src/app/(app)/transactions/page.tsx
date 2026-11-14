@@ -473,9 +473,24 @@ export default function TransactionsPage() {
                 setSearchQuery(e.target.value);
                 setPage(1);
               }}
-              className="glass-input w-full h-11 pl-10 pr-3 text-base md:text-sm focus:outline-none"
+              className={`glass-input w-full h-11 pl-10 pr-10 text-base md:text-sm focus:outline-none ${
+                searchQuery ? "pr-3" : ""
+              }`}
               aria-label="Search transactions"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setPage(1);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
           <div

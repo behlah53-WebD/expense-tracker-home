@@ -49,7 +49,7 @@ export function TransactionDrawer({
   const selectedCategoryId = watch("categoryId");
   const recurring = watch("recurring");
 
-  const { data: categories = [], isLoading: isLoadingCategories } = useCategories(selectedType, {
+  const { data: categories = [], isLoading: isLoadingCategories, refetch: refetchCategories } = useCategories(selectedType, {
     skip: !isOpen,
   });
   const createTx = useCreateTransaction();
@@ -84,6 +84,17 @@ export function TransactionDrawer({
       setValue("categoryId", categories[0].id);
     }
   }, [categories, selectedCategoryId, setValue]);
+
+  // Keep category list live while drawer is open: a category added/edited/deleted
+  // from settings (or anywhere) dispatches aurora:category-change and we refetch.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleCategoryChange = () => {
+      refetchCategories();
+    };
+    window.addEventListener("aurora:category-change", handleCategoryChange);
+    return () => window.removeEventListener("aurora:category-change", handleCategoryChange);
+  }, [isOpen, refetchCategories]);
 
   const onSubmit = async (data: TransactionInput) => {
     if (isEditing && transactionToEdit) {

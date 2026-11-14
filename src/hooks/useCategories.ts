@@ -31,6 +31,9 @@ export function useCreateCategory() {
     try {
       const res = await createCat(data).unwrap();
       toast.success("Category created!");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:category-change"));
+      }
       return res;
     } catch (err: any) {
       toast.error(err?.data?.error || err?.message || "Failed to create category");
@@ -52,6 +55,9 @@ export function useUpdateCategory() {
     try {
       const res = await updateCat({ id, data }).unwrap();
       toast.success("Category updated!");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:category-change"));
+      }
       return res;
     } catch (err: any) {
       toast.error(err?.data?.error || err?.message || "Failed to update category");
@@ -73,6 +79,9 @@ export function useDeleteCategory() {
     try {
       const res = await deleteCat(id).unwrap();
       toast.success("Category deleted");
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("aurora:category-change"));
+      }
       return res;
     } catch (err: any) {
       toast.error(err?.data?.error || err?.message || "Failed to delete category");

@@ -33,7 +33,7 @@ export async function GET(req: Request) {
     const [categories, counts] = await Promise.all([
       Category.find(query)
         .select("name color icon type userId createdAt updatedAt")
-        .sort({ name: 1 })
+        .sort({ createdAt: -1, name: 1 })
         .lean(),
 
       Transaction.aggregate([
