@@ -93,11 +93,11 @@ export async function GET(req: Request) {
 
     const totalAmount = grouped.reduce((s: number, g: any) => s + g.amount, 0);
 
-    const categories = grouped.map((g: any) => ({
-      categoryId: g._id?.toString(),
-      name: g.cat?.name || "Unknown",
+    const categories = grouped.map((g: any, index: number) => ({
+      categoryId: g._id ? g._id.toString() : `uncategorized-${index}`,
+      name: g.cat?.name || "Uncategorized",
       color: g.cat?.color || "#8B93B8",
-      icon: g.cat?.icon || "MoreHorizontal",
+      icon: g.cat?.icon || "Tag",
       amount: g.amount,
       count: g.count,
       percentage: totalAmount > 0 ? Math.round((g.amount / totalAmount) * 1000) / 10 : 0,

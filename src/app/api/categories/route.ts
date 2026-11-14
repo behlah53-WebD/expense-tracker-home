@@ -4,6 +4,7 @@ import connectDB from "@/lib/mongodb";
 import Category from "@/lib/models/Category";
 import Transaction from "@/lib/models/Transaction";
 import mongoose from "mongoose";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { categorySchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +43,11 @@ export async function GET(req: Request) {
       ]),
     ]);
 
-    const countMap = new Map(counts.map((c) => [c._id.toString(), c.count]));
+    const countMap = new Map(
+      counts
+        .filter((c) => c._id != null)
+        .map((c) => [c._id.toString(), c.count])
+    );
 
     const result = categories.map((c) => ({
       id: c._id.toString(),
@@ -60,8 +65,9 @@ export async function GET(req: Request) {
 
     return NextResponse.json(result, {
       headers: {
-        // Client may cache for 60 s; CDN/proxy may cache for 30 s
-        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
         "X-Response-Time": `${totalMs}ms`,
         "X-Auth-Ms": `${authMs}ms`,
         "X-DB-Connect-Ms": `${dbConnectMs}ms`,
@@ -120,6 +126,15 @@ export async function POST(req: Request) {
       userId,
     });
 
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+      revalidatePath("/transactions");
+      revalidatePath("/settings");
+    } catch {
+      // Ignore in non-Next request context
+    }
+
     return NextResponse.json(
       {
         id: category._id.toString(),
@@ -131,7 +146,12 @@ export async function POST(req: Request) {
         createdAt: category.createdAt,
         updatedAt: category.updatedAt,
       },
-      { status: 201 }
+      {
+        status: 201,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
     );
   } catch (error) {
     console.error("Category POST error:", error);

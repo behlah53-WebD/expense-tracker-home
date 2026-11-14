@@ -111,6 +111,16 @@ export default function SettingsPage() {
     setIsMounted(true);
   }, []);
 
+  // Keep category list live: a delete/add/edit from anywhere dispatches
+  // aurora:category-change, so refetch to stay in sync.
+  useEffect(() => {
+    const handleCategoryChange = () => {
+      refetchCategories();
+    };
+    window.addEventListener("aurora:category-change", handleCategoryChange);
+    return () => window.removeEventListener("aurora:category-change", handleCategoryChange);
+  }, [refetchCategories]);
+
   // Handle Profile Update
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,17 +180,17 @@ export default function SettingsPage() {
   // Handle Delete Category (with confirmation + transaction guard)
   const handleDeleteCategory = async () => {
     if (!deleteCatId) return;
+    const catIdToDelete = deleteCatId;
+    setDeleteCatId(null);
+    setDeleteCatName("");
+    if (selectedBudgetCat === catIdToDelete) {
+      setSelectedBudgetCat("");
+    }
     try {
-      await deleteCat.mutateAsync(deleteCatId);
+      await deleteCat.mutateAsync(catIdToDelete);
       await refetchCategories();
-      // If the deleted category was selected for a budget, clear the selection
-      if (selectedBudgetCat === deleteCatId) {
-        setSelectedBudgetCat("");
-      }
-      setDeleteCatId(null);
-      setDeleteCatName("");
     } catch {
-      // toast is handled in hook; optimistic removal already applied
+      // toast is handled in hook; optimistic removal will roll back
     }
   };
 

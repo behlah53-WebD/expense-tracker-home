@@ -7,7 +7,7 @@ export interface ITransaction extends Document {
   note?: string;
   date: Date;
   recurring: boolean;
-  categoryId: mongoose.Types.ObjectId;
+  categoryId?: mongoose.Types.ObjectId | null;
   userId: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -20,7 +20,7 @@ const TransactionSchema = new Schema<ITransaction>(
     note: { type: String, trim: true, maxlength: 255 },
     date: { type: Date, required: true, default: Date.now },
     recurring: { type: Boolean, default: false },
-    categoryId: { type: Schema.Types.ObjectId, ref: "Category", required: true },
+    categoryId: { type: Schema.Types.ObjectId, ref: "Category", required: false },
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   },
   { timestamps: true }

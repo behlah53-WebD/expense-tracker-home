@@ -121,9 +121,9 @@ export function CategoryDonut({
 
         {/* Legend List */}
         <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
-          {displayCategories.slice(0, 5).map((cat) => (
+          {displayCategories.slice(0, 5).map((cat, index) => (
             <div
-              key={cat.categoryId}
+              key={cat.categoryId ? `cat-${cat.categoryId}-${index}` : `cat-${cat.name || "item"}-${index}`}
               className="flex items-center justify-between text-xs p-2 rounded-inner bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors"
             >
               <div className="flex items-center gap-2 truncate">

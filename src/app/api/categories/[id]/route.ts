@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
 import Category from "@/lib/models/Category";
+import Budget from "@/lib/models/Budget";
+import Transaction from "@/lib/models/Transaction";
 import mongoose from "mongoose";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { categorySchema } from "@/lib/validators";
 
 export const dynamic = "force-dynamic";
@@ -38,9 +41,10 @@ export async function PUT(
     await connectDB();
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
+    const categoryObjectId = new mongoose.Types.ObjectId(id);
 
     const category = await Category.findOneAndUpdate(
-      { _id: id, userId },
+      { _id: categoryObjectId, userId },
       { name: name.trim(), color, icon, type },
       { new: true }
     ).lean();
@@ -49,16 +53,32 @@ export async function PUT(
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      id: category._id.toString(),
-      name: category.name,
-      color: category.color,
-      icon: category.icon,
-      type: category.type,
-      userId: category.userId.toString(),
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-    });
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+      revalidatePath("/transactions");
+      revalidatePath("/settings");
+    } catch {
+      // Ignore in non-Next request context
+    }
+
+    return NextResponse.json(
+      {
+        id: category._id.toString(),
+        name: category.name,
+        color: category.color,
+        icon: category.icon,
+        type: category.type,
+        userId: category.userId.toString(),
+        createdAt: category.createdAt,
+        updatedAt: category.updatedAt,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Category PUT error:", error);
     return NextResponse.json({ error: "Failed to update category" }, { status: 500 });
@@ -83,16 +103,44 @@ export async function DELETE(
 
     await connectDB();
 
+    const userId = new mongoose.Types.ObjectId(session.user.id);
+    const categoryObjectId = new mongoose.Types.ObjectId(id);
+
     const deleted = await Category.findOneAndDelete({
-      _id: id,
-      userId: session.user.id,
+      _id: categoryObjectId,
+      userId,
     }).lean();
 
     if (!deleted) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Category deleted successfully" });
+    // Cascade delete any budgets set for this category
+    await Budget.deleteMany({ categoryId: categoryObjectId, userId });
+
+    // Unset categoryId on any transactions associated with this category
+    await Transaction.updateMany(
+      { categoryId: categoryObjectId, userId },
+      { $unset: { categoryId: 1 } }
+    );
+
+    try {
+      revalidateTag(`dashboard-${session.user.id}`, { expire: 0 });
+      revalidatePath("/dashboard");
+      revalidatePath("/transactions");
+      revalidatePath("/settings");
+    } catch {
+      // Ignore in non-Next request context
+    }
+
+    return NextResponse.json(
+      { message: "Category deleted successfully" },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      }
+    );
   } catch (error) {
     console.error("Category DELETE error:", error);
     return NextResponse.json({ error: "Failed to delete category" }, { status: 500 });

@@ -61,7 +61,7 @@ export function TransactionDrawer({
       reset({
         type: transactionToEdit.type,
         amount: transactionToEdit.amount,
-        categoryId: transactionToEdit.categoryId,
+        categoryId: transactionToEdit.categoryId || "",
         date: new Date(transactionToEdit.date),
         note: transactionToEdit.note || "",
         recurring: transactionToEdit.recurring,
@@ -78,10 +78,14 @@ export function TransactionDrawer({
     }
   }, [transactionToEdit, defaultType, reset, isOpen]);
 
-  // Set first category automatically when categories load and none is selected
+  // Set first category automatically when categories load and none is selected or selected category was deleted
   useEffect(() => {
-    if (categories.length > 0 && !selectedCategoryId) {
-      setValue("categoryId", categories[0].id);
+    if (categories.length > 0) {
+      if (!selectedCategoryId || !categories.some(c => c.id === selectedCategoryId)) {
+        setValue("categoryId", categories[0].id);
+      }
+    } else if (categories.length === 0 && selectedCategoryId) {
+      setValue("categoryId", "");
     }
   }, [categories, selectedCategoryId, setValue]);
 

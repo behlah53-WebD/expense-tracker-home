@@ -19,8 +19,8 @@ function normalise(t: any) {
     date: t.date,
     recurring: t.recurring,
     userId: t.userId.toString(),
-    categoryId: t.categoryId?._id?.toString() ?? t.categoryId?.toString(),
-    category: t.categoryId
+    categoryId: t.categoryId?._id?.toString() ?? (typeof t.categoryId === "string" ? t.categoryId : t.categoryId?.toString?.() ?? null),
+    category: t.categoryId && t.categoryId.name
       ? {
           id: t.categoryId._id?.toString() ?? t.categoryId.toString(),
           name: t.categoryId.name,

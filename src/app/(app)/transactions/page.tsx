@@ -243,7 +243,7 @@ export default function TransactionsPage() {
   );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const { data, isLoading } = useTransactions({
+  const { data, isLoading, refetch: refetchTransactions } = useTransactions({
     type,
     categoryId: categoryId === "ALL" ? undefined : categoryId,
     q: debouncedSearch || undefined,
@@ -253,7 +253,7 @@ export default function TransactionsPage() {
     page,
     limit: 10,
   });
-  const { data: categories = [] } = useCategories();
+  const { data: categories = [], refetch: refetchTxCategories } = useCategories();
   const deleteMutation = useDeleteTransaction();
 
   const transactions = useMemo(() => data?.transactions || [], [data]);
@@ -280,6 +280,28 @@ export default function TransactionsPage() {
       window.removeEventListener("keydown", onKey);
     };
   }, [deleteConfirmId]);
+
+  // When a category is deleted/added/edited anywhere (e.g. settings),
+  // refetch categories and transactions so the deleted category disappears
+  // and its transactions show as uncategorized.
+  useEffect(() => {
+    const handleCategoryChange = () => {
+      refetchTransactions();
+      refetchTxCategories();
+    };
+    window.addEventListener("aurora:category-change", handleCategoryChange);
+    return () => window.removeEventListener("aurora:category-change", handleCategoryChange);
+  }, [refetchTransactions, refetchTxCategories]);
+
+  // If the filtered category was deleted, reset category filter to "ALL"
+  useEffect(() => {
+    if (categoryId !== "ALL" && categories.length > 0) {
+      const exists = categories.some((c) => c.id === categoryId);
+      if (!exists) {
+        setCategoryId("ALL");
+      }
+    }
+  }, [categories, categoryId]);
 
   const handleEdit = useCallback((tx: TransactionWithCategory) => {
     setEditingTx(tx);

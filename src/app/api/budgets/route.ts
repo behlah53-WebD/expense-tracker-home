@@ -59,7 +59,9 @@ export async function GET(req: Request) {
     ]);
 
     const spendMap = new Map<string, number>(
-      expenses.map((e) => [e._id.toString(), e.total])
+      expenses
+        .filter((e) => e._id != null)
+        .map((e) => [e._id.toString(), e.total])
     );
 
     const budgetsWithSpend = (budgets as any[]).map((b) => {
@@ -73,9 +75,9 @@ export async function GET(req: Request) {
         year: b.year,
         userId: b.userId.toString(),
         categoryId,
-        category: b.categoryId
+        category: b.categoryId && b.categoryId.name
           ? {
-              id: b.categoryId._id.toString(),
+              id: b.categoryId._id ? b.categoryId._id.toString() : b.categoryId.toString(),
               name: b.categoryId.name,
               color: b.categoryId.color,
               icon: b.categoryId.icon,
@@ -162,9 +164,9 @@ export async function POST(req: Request) {
       year: b.year,
       userId: b.userId.toString(),
       categoryId: b.categoryId?._id?.toString() || b.categoryId?.toString(),
-      category: b.categoryId
+      category: b.categoryId && b.categoryId.name
         ? {
-            id: b.categoryId._id.toString(),
+            id: b.categoryId._id ? b.categoryId._id.toString() : b.categoryId.toString(),
             name: b.categoryId.name,
             color: b.categoryId.color,
             icon: b.categoryId.icon,

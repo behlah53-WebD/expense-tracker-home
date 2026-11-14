@@ -296,8 +296,8 @@ async function fetchDashboardData(userIdStr: string): Promise<DashboardDataPaylo
     date: typeof t.date === "string" ? t.date : t.date.toISOString(),
     recurring: !!t.recurring,
     userId: t.userId.toString(),
-    categoryId: t.categoryId?._id?.toString() ?? t.categoryId?.toString(),
-    category: t.categoryId
+    categoryId: t.categoryId?._id?.toString() ?? (typeof t.categoryId === "string" ? t.categoryId : t.categoryId?.toString?.() ?? null),
+    category: t.categoryId && t.categoryId.name
       ? {
           id: t.categoryId._id?.toString() ?? t.categoryId.toString(),
           name: t.categoryId.name,
@@ -353,11 +353,11 @@ async function fetchDashboardData(userIdStr: string): Promise<DashboardDataPaylo
 
   // Process category breakdown
   const catTotalAmount = (categoryAggregation as any[]).reduce((s: number, g: any) => s + g.amount, 0);
-  const categoriesBreakdown = (categoryAggregation as any[]).map((g: any) => ({
-    categoryId: g._id?.toString(),
-    name: g.cat?.name || "Unknown",
+  const categoriesBreakdown = (categoryAggregation as any[]).map((g: any, index: number) => ({
+    categoryId: g._id ? g._id.toString() : `uncategorized-${index}`,
+    name: g.cat?.name || "Uncategorized",
     color: g.cat?.color || "#8B93B8",
-    icon: g.cat?.icon || "MoreHorizontal",
+    icon: g.cat?.icon || "Tag",
     amount: g.amount,
     count: g.count,
     percentage: catTotalAmount > 0 ? Math.round((g.amount / catTotalAmount) * 1000) / 10 : 0,
@@ -373,7 +373,9 @@ async function fetchDashboardData(userIdStr: string): Promise<DashboardDataPaylo
 
   // Process budgets and actual spending
   const spendMap = new Map<string, number>(
-    (budgetExpensesRaw as any[]).map((e) => [e._id.toString(), e.total])
+    (budgetExpensesRaw as any[])
+      .filter((e) => e._id != null)
+      .map((e) => [e._id.toString(), e.total])
   );
 
   const budgetsWithSpend = (userBudgetsRaw as any[]).map((b) => {
@@ -387,7 +389,7 @@ async function fetchDashboardData(userIdStr: string): Promise<DashboardDataPaylo
       year: b.year,
       userId: b.userId.toString(),
       categoryId,
-      category: b.categoryId
+      category: b.categoryId && b.categoryId.name
         ? {
             id: b.categoryId._id?.toString() ?? b.categoryId.toString(),
             name: b.categoryId.name,

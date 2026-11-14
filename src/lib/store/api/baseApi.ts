@@ -8,15 +8,15 @@ export interface TransactionWithCategory {
   note?: string | null;
   date: string;
   recurring: boolean;
-  categoryId: string;
+  categoryId?: string | null;
   userId: string;
-  category: {
+  category?: {
     id: string;
     name: string;
     color: string;
     icon: string;
     type: string;
-  };
+  } | null;
 }
 
 export interface TransactionsResponse {
@@ -287,7 +287,15 @@ export const baseApi = createApi({
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Categories", { type: "Transactions", id: "LIST" }],
+      invalidatesTags: [
+        "Categories",
+        "Transactions",
+        "Dashboard",
+        "Summary",
+        "MonthlyTrend",
+        "CategoryBreakdown",
+        "Budgets",
+      ],
     }),
 
     deleteCategory: builder.mutation<{ message: string }, string>({
@@ -295,7 +303,39 @@ export const baseApi = createApi({
         url: `/categories/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Categories", { type: "Transactions", id: "LIST" }],
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        const patchAll = dispatch(
+          baseApi.util.updateQueryData("getCategories", undefined, (draft) => {
+            return draft.filter((c) => c.id !== id);
+          })
+        );
+        const patchExpense = dispatch(
+          baseApi.util.updateQueryData("getCategories", "EXPENSE", (draft) => {
+            return draft.filter((c) => c.id !== id);
+          })
+        );
+        const patchIncome = dispatch(
+          baseApi.util.updateQueryData("getCategories", "INCOME", (draft) => {
+            return draft.filter((c) => c.id !== id);
+          })
+        );
+        try {
+          await queryFulfilled;
+        } catch {
+          patchAll.undo();
+          patchExpense.undo();
+          patchIncome.undo();
+        }
+      },
+      invalidatesTags: [
+        "Categories",
+        "Transactions",
+        "Dashboard",
+        "Summary",
+        "MonthlyTrend",
+        "CategoryBreakdown",
+        "Budgets",
+      ],
     }),
 
     // Budgets Endpoints
