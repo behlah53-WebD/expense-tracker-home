@@ -328,7 +328,11 @@ export default function ReportsPage() {
           </div>
 
           <div className="divide-y divide-[var(--border)]/40 max-h-64 overflow-y-auto pr-1">
-            {top5Expenses.map((tx, idx) => (
+            {top5Expenses.map((tx, idx) => {
+              const catColor = tx.category?.color || "#8B93B8";
+              const catIcon = tx.category?.icon || "Tag";
+              const catName = tx.category?.name || "Uncategorized";
+              return (
               <div
                 key={tx.id}
                 className="py-2.5 flex items-center justify-between gap-3 text-xs hover:bg-[var(--surface-hover)] px-2 rounded-[var(--radius-inner)] transition-colors"
@@ -340,18 +344,18 @@ export default function ReportsPage() {
                   <div
                     className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                     style={{
-                      backgroundColor: `${tx.category.color}25`,
-                      color: tx.category.color,
+                      backgroundColor: `${catColor}25`,
+                      color: catColor,
                     }}
                   >
                     <CategoryIcon
-                      name={tx.category.icon}
+                      name={catIcon}
                       className="w-3.5 h-3.5"
                     />
                   </div>
                   <div className="truncate">
                     <p className="font-medium text-[var(--text-primary)] truncate">
-                      {tx.note || tx.category.name}
+                      {tx.note || catName}
                     </p>
                     <p className="text-[10px] text-[var(--text-muted)] font-mono">
                       {formatDate(tx.date)}
@@ -363,7 +367,8 @@ export default function ReportsPage() {
                   -{formatCurrency(tx.amount, currency)}
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
         </GlassCard>
       </div>

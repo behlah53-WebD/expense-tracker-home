@@ -286,7 +286,11 @@ export default function IncomePage() {
           <>
             {/* 1. Mobile Cards (< 768px): Stacked rows without horizontal scroll */}
             <div className="block md:hidden divide-y divide-[var(--border)]/40">
-              {transactions.map(tx => (
+              {transactions.map(tx => {
+                const catColor = tx.category?.color || "#8B93B8";
+                const catIcon = tx.category?.icon || "Tag";
+                const catName = tx.category?.name || "Uncategorized";
+                return (
                 <div
                   key={tx.id}
                   className="p-4 flex items-center justify-between gap-3 hover:bg-[var(--surface-hover)] transition-colors"
@@ -295,12 +299,12 @@ export default function IncomePage() {
                     <div
                       className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                       style={{
-                        backgroundColor: `${tx.category.color}25`,
-                        color: tx.category.color,
+                        backgroundColor: `${catColor}25`,
+                        color: catColor,
                       }}
                     >
                       <CategoryIcon
-                        name={tx.category.icon}
+                        name={catIcon}
                         className="w-5 h-5"
                       />
                     </div>
@@ -308,7 +312,7 @@ export default function IncomePage() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-semibold text-xs text-[var(--text-primary)] truncate">
-                          {tx.category.name}
+                          {catName}
                         </span>
                         {tx.recurring && (
                           <span className="inline-flex items-center gap-0.5 text-[9px] text-income bg-income/15 px-1.5 py-0.2 rounded-full font-medium">
@@ -337,21 +341,22 @@ export default function IncomePage() {
                           setIsDrawerOpen(true);
                         }}
                         className="w-11 h-11 rounded-xl flex items-center justify-center glass-card text-[var(--text-muted)] hover:text-[var(--aurora-cyan)] transition-colors"
-                        aria-label={`Edit ${tx.category.name}`}
+                        aria-label={`Edit ${catName}`}
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirmId(tx.id)}
                         className="w-11 h-11 rounded-xl flex items-center justify-center glass-card text-[var(--text-muted)] hover:text-[var(--aurora-coral)] transition-colors"
-                        aria-label={`Delete ${tx.category.name}`}
+                        aria-label={`Delete ${catName}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* 2. Desktop Table (>= 768px) */}
@@ -367,7 +372,11 @@ export default function IncomePage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]/40">
-                  {transactions.map(tx => (
+                  {transactions.map(tx => {
+                    const catColor = tx.category?.color || "#8B93B8";
+                    const catIcon = tx.category?.icon || "Tag";
+                    const catName = tx.category?.name || "Uncategorized";
+                    return (
                     <tr
                       key={tx.id}
                       className="hover:bg-[var(--surface-hover)] transition-colors group"
@@ -377,17 +386,17 @@ export default function IncomePage() {
                           <div
                             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                             style={{
-                              backgroundColor: `${tx.category.color}25`,
-                              color: tx.category.color,
+                              backgroundColor: `${catColor}25`,
+                              color: catColor,
                             }}
                           >
                             <CategoryIcon
-                              name={tx.category.icon}
+                              name={catIcon}
                               className="w-4 h-4"
                             />
                           </div>
                           <span className="font-semibold text-[var(--text-primary)]">
-                            {tx.category.name}
+                            {catName}
                           </span>
                         </div>
                       </td>
@@ -415,21 +424,22 @@ export default function IncomePage() {
                               setIsDrawerOpen(true);
                             }}
                             className="w-11 h-11 rounded-xl flex items-center justify-center glass-card hover:text-[var(--aurora-cyan)] transition-colors"
-                            aria-label={`Edit ${tx.category.name}`}
+                            aria-label={`Edit ${catName}`}
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(tx.id)}
                             className="w-11 h-11 rounded-xl flex items-center justify-center glass-card hover:text-[var(--aurora-coral)] transition-colors"
-                            aria-label={`Delete ${tx.category.name}`}
+                            aria-label={`Delete ${catName}`}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

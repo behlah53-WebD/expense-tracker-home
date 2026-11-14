@@ -48,6 +48,9 @@ export function RecentTransactionsCard({
           <div className="divide-y divide-[var(--border)] max-h-80 overflow-y-auto pr-1">
             {transactions.map((tx) => {
               const isIncome = tx.type === "INCOME";
+              const categoryColor = tx.category?.color || "#8B93B8";
+              const categoryName = tx.category?.name || "Uncategorized";
+              const categoryIcon = tx.category?.icon || "Tag";
 
               return (
                 <div
@@ -59,20 +62,20 @@ export function RecentTransactionsCard({
                     <div
                       className="w-10 h-10 rounded-inner flex items-center justify-center shrink-0"
                       style={{
-                        backgroundColor: `${tx.category.color}25`,
-                        color: tx.category.color,
+                        backgroundColor: `${categoryColor}25`,
+                        color: categoryColor,
                       }}
                     >
-                      <CategoryIcon name={tx.category.icon} className="w-5 h-5" />
+                      <CategoryIcon name={categoryIcon} className="w-5 h-5" />
                     </div>
 
                     <div className="truncate">
                       <p className="text-xs font-semibold text-[var(--text-heading)] truncate">
-                        {tx.note || tx.category.name}
+                        {tx.note || categoryName}
                       </p>
                       <div className="flex items-center gap-2 text-[10px] text-[var(--text-muted)] mt-0.5">
                         <span className="font-medium text-[var(--text-secondary)]">
-                          {tx.category.name}
+                          {categoryName}
                         </span>
                         <span>•</span>
                         <span>{formatRelativeDate(tx.date)}</span>

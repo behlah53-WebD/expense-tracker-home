@@ -103,7 +103,7 @@ const TxSlip = memo(function TxSlip(props: {
 }) {
   const { tx, currency, maxAmount, showDate, onEdit, onDelete } = props;
   const isIncome = tx.type === "INCOME";
-  const color = tx.category.color || "var(--primary)";
+  const color = tx.category?.color || "var(--primary)";
   const weight = Math.max(
     4,
     Math.min(100, (Number(tx.amount) / (maxAmount || 1)) * 100)
@@ -136,13 +136,13 @@ const TxSlip = memo(function TxSlip(props: {
               color,
             }}
           >
-            <CategoryIcon name={tx.category.icon} className="w-5 h-5" />
+            <CategoryIcon name={tx.category?.icon || "Tag"} className="w-5 h-5" />
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-semibold text-[13px] text-[var(--text-primary)] truncate">
-                {tx.category.name}
+                {tx.category?.name || "Uncategorized"}
               </span>
               {tx.recurring && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--primary)] bg-[var(--primary)]/15 px-1.5 py-0.5 rounded-full">
@@ -169,14 +169,14 @@ const TxSlip = memo(function TxSlip(props: {
               <button
                 onClick={() => onEdit(tx)}
                 className="p-2.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--aurora-cyan)] hover:bg-white/10 transition-colors"
-                aria-label={`Edit ${tx.category.name} transaction`}
+                aria-label={`Edit ${tx.category?.name || "transaction"} transaction`}
               >
                 <Edit2 className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => onDelete(tx.id)}
                 className="p-2.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--aurora-coral)] hover:bg-white/10 transition-colors"
-                aria-label={`Delete ${tx.category.name} transaction`}
+                aria-label={`Delete ${tx.category?.name || "transaction"} transaction`}
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>

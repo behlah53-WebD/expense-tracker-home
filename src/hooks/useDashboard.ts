@@ -126,8 +126,8 @@ export async function prefetchDashboard(): Promise<void> {
  * silent background revalidation, and mutation-triggered refetches.
  */
 export function useDashboard() {
-  const [data, setData] = useState<DashboardData | null>(() => getCachedData());
-  const [isLoading, setIsLoading] = useState<boolean>(() => !data);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isFetching, setIsFetching] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -162,12 +162,20 @@ export function useDashboard() {
 
   // Initial fetch on mount
   useEffect(() => {
+    // Load from cache first (client-only, avoids SSR hydration mismatch)
+    const cached = getCachedData();
+    if (cached) {
+      setData(cached);
+    }
+
     const cachedTime = Number(localStorage.getItem(CACHE_TIME_KEY) || 0);
     const isStale = Date.now() - cachedTime > STALE_TIME_MS;
 
     // If no data or data is stale, fetch fresh
-    if (!data || isStale) {
-      fetchFreshData(!data ? false : true);
+    if (!cached || isStale) {
+      fetchFreshData(!cached ? false : true);
+    } else {
+      setIsLoading(false);
     }
 
     // Refetch on window focus if stale
@@ -191,7 +199,7 @@ export function useDashboard() {
       window.removeEventListener("aurora:mutation", handleMutation);
       window.removeEventListener("storage", handleMutation);
     };
-  }, [fetchFreshData, data]);
+  }, [fetchFreshData]);
 
   const refetch = useCallback(() => {
     return fetchFreshData(false);

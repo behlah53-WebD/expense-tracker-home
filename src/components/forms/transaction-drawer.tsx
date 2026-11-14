@@ -231,6 +231,19 @@ export function TransactionDrawer({
                   </div>
                 </div>
 
+                {/* Note / Description */}
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)] flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" aria-hidden="true" /> Note (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Groceries at Market"
+                    {...register("note")}
+                    className="glass-input w-full px-4 text-base md:text-sm"
+                  />
+                </div>
+
                 {/* Category Chips Grid */}
                 <div className="space-y-2">
                   <label className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)] block">
@@ -291,19 +304,6 @@ export function TransactionDrawer({
                         : new Date().toISOString().split("T")[0]
                     }
                     onChange={(e) => setValue("date", new Date(e.target.value))}
-                    className="glass-input w-full px-4 text-base md:text-sm"
-                  />
-                </div>
-
-                {/* Note / Description */}
-                <div className="space-y-1.5">
-                  <label className="text-[12px] font-medium uppercase tracking-[0.08em] text-[var(--text-muted)] flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" aria-hidden="true" /> Note (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Groceries at Market"
-                    {...register("note")}
                     className="glass-input w-full px-4 text-base md:text-sm"
                   />
                 </div>

@@ -142,7 +142,7 @@ export const baseApi = createApi({
     "Dashboard",
   ],
   keepUnusedDataFor: 300, // Cache server responses for 5 minutes
-  refetchOnMountOrArgChange: 30, // Refetch only if 30s have passed since last mount
+  refetchOnMountOrArgChange: false, // Use keepUnusedDataFor TTL instead; mutations invalidate tags
   endpoints: (builder) => ({
     // Unified Fast Dashboard Endpoint
     getDashboard: builder.query<any, void>({
