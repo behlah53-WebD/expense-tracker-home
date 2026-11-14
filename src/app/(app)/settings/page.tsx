@@ -10,6 +10,7 @@ import {
   useCreateCategory,
   useDeleteCategory,
 } from "@/hooks/useCategories";
+import type { CategoryItem } from "@/hooks/useCategories";
 import { useBudgets, useSaveBudget, useDeleteBudget } from "@/hooks/useBudgets";
 import { formatCurrency } from "@/lib/utils";
 import {
@@ -64,6 +65,7 @@ export default function SettingsPage() {
   // Budget Creation State
   const [selectedBudgetCat, setSelectedBudgetCat] = useState("");
   const [budgetLimit, setBudgetLimit] = useState<number | "">("");
+  const [isMounted, setIsMounted] = useState(false);
 
   // Delete Account Confirmation State
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -74,7 +76,14 @@ export default function SettingsPage() {
   const [deleteCatId, setDeleteCatId] = useState<string | null>(null);
   const [deleteCatName, setDeleteCatName] = useState("");
 
-  const { data: categories = [] } = useCategories();
+  const { data: fetchedCategories = [], refetch: refetchCategories } =
+    useCategories();
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+
+  useEffect(() => {
+    setCategories(fetchedCategories);
+  }, [fetchedCategories]);
+
   const createCat = useCreateCategory();
   const deleteCat = useDeleteCategory();
 
@@ -101,6 +110,11 @@ export default function SettingsPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isCatModalOpen, isDeleteDialogOpen]);
+
+  // Mark client mount to avoid hydration mismatch on theme-dependent icons
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Handle Profile Update
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -162,7 +176,9 @@ export default function SettingsPage() {
   const handleDeleteCategory = async () => {
     if (!deleteCatId) return;
     try {
+      setCategories(prev => prev.filter(c => c.id !== deleteCatId));
       await deleteCat.mutateAsync(deleteCatId);
+      await refetchCategories();
       // If the deleted category was selected for a budget, clear the selection
       if (selectedBudgetCat === deleteCatId) {
         setSelectedBudgetCat("");
@@ -170,7 +186,7 @@ export default function SettingsPage() {
       setDeleteCatId(null);
       setDeleteCatName("");
     } catch {
-      // toast is handled in hook
+      // toast is handled in hook; optimistic removal already applied
     }
   };
 
@@ -273,7 +289,7 @@ export default function SettingsPage() {
           >
             <div className="flex items-center justify-between">
               <Moon className="w-5 h-5 text-[var(--aurora-cyan)]" />
-              {theme === "dark" && <Check className="w-4 h-4 text-income" />}
+              {isMounted && theme === "dark" && <Check className="w-4 h-4 text-income" />}
             </div>
             <p className="font-semibold text-sm text-[var(--text-primary)] mt-3">
               Midnight Expense Tracker
@@ -295,7 +311,7 @@ export default function SettingsPage() {
           >
             <div className="flex items-center justify-between">
               <Sun className="w-5 h-5 text-amber-400" />
-              {theme === "light" && <Check className="w-4 h-4 text-income" />}
+              {isMounted && theme === "light" && <Check className="w-4 h-4 text-income" />}
             </div>
             <p className="font-semibold text-sm text-[var(--text-primary)] mt-3">
               Pearl Expense Tracker
@@ -317,7 +333,7 @@ export default function SettingsPage() {
           >
             <div className="flex items-center justify-between">
               <Laptop className="w-5 h-5 text-[var(--text-secondary)]" />
-              {theme === "system" && <Check className="w-4 h-4 text-income" />}
+              {isMounted && theme === "system" && <Check className="w-4 h-4 text-income" />}
             </div>
             <p className="font-semibold text-sm text-[var(--text-primary)] mt-3">
               System Sync
