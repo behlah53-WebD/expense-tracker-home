@@ -78,16 +78,11 @@ export default function SettingsPage() {
 
   const { data: fetchedCategories = [], refetch: refetchCategories } =
     useCategories();
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-
-  useEffect(() => {
-    setCategories(fetchedCategories);
-  }, [fetchedCategories]);
 
   const createCat = useCreateCategory();
   const deleteCat = useDeleteCategory();
 
-  const deletingCategory = categories.find(c => c.id === deleteCatId);
+  const deletingCategory = fetchedCategories.find(c => c.id === deleteCatId);
   const hasTransactions =
     Boolean(deletingCategory?._count?.transactions && deletingCategory._count.transactions > 0);
 
@@ -176,7 +171,6 @@ export default function SettingsPage() {
   const handleDeleteCategory = async () => {
     if (!deleteCatId) return;
     try {
-      setCategories(prev => prev.filter(c => c.id !== deleteCatId));
       await deleteCat.mutateAsync(deleteCatId);
       await refetchCategories();
       // If the deleted category was selected for a budget, clear the selection
@@ -282,7 +276,7 @@ export default function SettingsPage() {
             type="button"
             onClick={() => setTheme("dark")}
             className={`p-4 rounded-[var(--radius-inner)] border text-left transition-all ${
-              theme === "dark"
+              isMounted && theme === "dark"
                 ? "border-[var(--primary)] bg-[var(--primary)]/15 shadow-glow-violet"
                 : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)]"
             }`}
@@ -304,7 +298,7 @@ export default function SettingsPage() {
             type="button"
             onClick={() => setTheme("light")}
             className={`p-4 rounded-[var(--radius-inner)] border text-left transition-all ${
-              theme === "light"
+              isMounted && theme === "light"
                 ? "border-[var(--primary)] bg-[var(--primary)]/15 shadow-glow-violet"
                 : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)]"
             }`}
@@ -326,7 +320,7 @@ export default function SettingsPage() {
             type="button"
             onClick={() => setTheme("system")}
             className={`p-4 rounded-[var(--radius-inner)] border text-left transition-all ${
-              theme === "system"
+              isMounted && theme === "system"
                 ? "border-[var(--primary)] bg-[var(--primary)]/15 shadow-glow-violet"
                 : "border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)]"
             }`}
@@ -509,7 +503,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pt-2 max-h-64 overflow-y-auto pr-1">
-          {categories.map(c => (
+          {fetchedCategories.map(c => (
             <div
               key={c.id}
               className="flex items-center justify-between p-2.5 rounded-[var(--radius-inner)] bg-[var(--surface)] border border-[var(--border)] group hover:bg-[var(--surface-hover)] transition-colors"
@@ -569,7 +563,7 @@ export default function SettingsPage() {
             className="glass-input h-11 px-3 text-base sm:text-xs bg-[var(--bg-elevated)] flex-1"
           >
             <option value="">Select Category...</option>
-            {categories
+            {fetchedCategories
               .filter(c => c.type === "EXPENSE")
               .map(c => (
                 <option key={c.id} value={c.id}>

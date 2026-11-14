@@ -27,7 +27,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#5B3AE0" },
-    { media: "(prefers-color-scheme: dark)", color: "#7C5CFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#4F46E5" },
   ],
 };
 
@@ -50,11 +50,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/favicon.ico?v=2", sizes: "16x16 32x32 48x48", type: "image/x-icon" },
+      { url: "/icons/favicon.svg?v=2", sizes: "any", type: "image/svg+xml" },
+      { url: "/icons/icon-192.png?v=2", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png?v=2", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
-    shortcut: "/icons/icon-192.png",
+    apple: [{ url: "/icons/apple-touch-icon.png?v=2", sizes: "180x180" }],
+    shortcut: "/icons/favicon.ico?v=2",
   },
   openGraph: {
     type: "website",

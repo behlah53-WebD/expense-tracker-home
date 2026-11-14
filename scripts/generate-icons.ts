@@ -1,120 +1,114 @@
 /**
  * Aurora Ledger PWA Icon Generator
+ * Single source: public/logo.svg (+ logo-maskable.svg, logo-monochrome.svg, favicon.svg)
  * Run with: npx tsx scripts/generate-icons.ts
- * Requires: sharp (npm install --save-dev sharp @types/node)
+ * Requires: sharp
  */
 
 import fs from "fs";
 import path from "path";
 
-const SVG_ICON = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#0E1230"/>
-      <stop offset="100%" stop-color="#070A1A"/>
-    </radialGradient>
-    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7C5CFF"/>
-      <stop offset="50%" stop-color="#38D5FF"/>
-      <stop offset="100%" stop-color="#2EF2B0"/>
-    </linearGradient>
-    <linearGradient id="glow2" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FF5C8A"/>
-      <stop offset="100%" stop-color="#7C5CFF"/>
-    </linearGradient>
-    <filter id="gf">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-  </defs>
-  <!-- Background circle -->
-  <circle cx="256" cy="256" r="256" fill="url(#bg)"/>
-  <!-- Glow blobs -->
-  <ellipse cx="200" cy="200" rx="120" ry="80" fill="#7C5CFF" opacity="0.25" filter="url(#gf)"/>
-  <ellipse cx="320" cy="300" rx="100" ry="70" fill="#38D5FF" opacity="0.2" filter="url(#gf)"/>
-  <ellipse cx="240" cy="340" rx="90" ry="60" fill="#2EF2B0" opacity="0.15" filter="url(#gf)"/>
-  <!-- Sparkle mark -->
-  <g transform="translate(256,256)">
-    <!-- Main sparkle star -->
-    <path d="M0,-80 L12,-12 L80,0 L12,12 L0,80 L-12,12 L-80,0 L-12,-12 Z"
-          fill="url(#glow)" opacity="0.95"/>
-    <!-- Secondary smaller star rotated 45deg -->
-    <path d="M0,-52 L8,-8 L52,0 L8,8 L0,52 L-8,8 L-52,0 L-8,-8 Z"
-          fill="url(#glow2)" opacity="0.6" transform="rotate(45)"/>
-    <!-- Center dot -->
-    <circle cx="0" cy="0" r="10" fill="white" opacity="0.9"/>
-  </g>
-</svg>`;
+const ICONS_DIR = path.join(process.cwd(), "public", "icons");
+const SPLASH_DIR = path.join(process.cwd(), "public", "splash");
 
-const MASKABLE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#0E1230"/>
-      <stop offset="100%" stop-color="#070A1A"/>
-    </radialGradient>
-    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7C5CFF"/>
-      <stop offset="50%" stop-color="#38D5FF"/>
-      <stop offset="100%" stop-color="#2EF2B0"/>
-    </linearGradient>
-    <linearGradient id="glow2" x1="100%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#FF5C8A"/>
-      <stop offset="100%" stop-color="#7C5CFF"/>
-    </linearGradient>
-    <filter id="gf">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-  </defs>
-  <!-- Full bleed background (safe zone is 40% of size = 204px inset 154px) -->
-  <rect width="512" height="512" fill="url(#bg)"/>
-  <!-- Glow blobs -->
-  <ellipse cx="200" cy="200" rx="140" ry="100" fill="#7C5CFF" opacity="0.25" filter="url(#gf)"/>
-  <ellipse cx="320" cy="300" rx="120" ry="90" fill="#38D5FF" opacity="0.2" filter="url(#gf)"/>
-  <!-- Sparkle mark -->
-  <g transform="translate(256,256)">
-    <path d="M0,-80 L12,-12 L80,0 L12,12 L0,80 L-12,12 L-80,0 L-12,-12 Z"
-          fill="url(#glow)" opacity="0.95"/>
-    <path d="M0,-52 L8,-8 L52,0 L8,8 L0,52 L-8,8 L-52,0 L-8,-8 Z"
-          fill="url(#glow2)" opacity="0.6" transform="rotate(45)"/>
-    <circle cx="0" cy="0" r="10" fill="white" opacity="0.9"/>
-  </g>
-</svg>`;
+if (!fs.existsSync(ICONS_DIR)) fs.mkdirSync(ICONS_DIR, { recursive: true });
+if (!fs.existsSync(SPLASH_DIR)) fs.mkdirSync(SPLASH_DIR, { recursive: true });
+
+const read = (file: string) => Buffer.from(fs.readFileSync(path.join(process.cwd(), "public", file), "utf-8"));
+
+const LOGO = read("logo.svg");
+const MASKABLE = read("logo-maskable.svg");
+const MONOCHROME = read("logo-monochrome.svg");
+const FAVICON = read("favicon.svg");
 
 async function generateIcons() {
-  let sharp: any;
-  try {
-    sharp = (await import("sharp")).default;
-  } catch {
-    console.error("❌ sharp not installed. Run: npm install --save-dev sharp");
-    process.exit(1);
-  }
+  const sharp = (await import("sharp")).default;
 
-  const iconsDir = path.join(process.cwd(), "public", "icons");
-  if (!fs.existsSync(iconsDir)) fs.mkdirSync(iconsDir, { recursive: true });
+  const png = (buf: Buffer, size: number) => sharp(buf).resize(size, size).png();
 
-  const svgBuffer = Buffer.from(SVG_ICON);
-  const maskBuffer = Buffer.from(MASKABLE_SVG);
-
-  const tasks = [
-    { name: "icon-192.png", size: 192, buf: svgBuffer },
-    { name: "icon-512.png", size: 512, buf: svgBuffer },
-    { name: "icon-maskable-512.png", size: 512, buf: maskBuffer },
-    { name: "apple-touch-icon.png", size: 180, buf: svgBuffer },
-    { name: "shortcut-add.png", size: 96, buf: svgBuffer },
-    { name: "shortcut-history.png", size: 96, buf: svgBuffer },
-    { name: "shortcut-reports.png", size: 96, buf: svgBuffer },
+  const tasks: Array<{ name: string; size: number; buf: Buffer; dir?: string }> = [
+    { name: "icon-192.png", size: 192, buf: LOGO },
+    { name: "icon-512.png", size: 512, buf: LOGO },
+    { name: "icon-maskable-512.png", size: 512, buf: MASKABLE },
+    { name: "apple-touch-icon.png", size: 180, buf: LOGO },
+    { name: "icon-monochrome.png", size: 512, buf: MONOCHROME },
+    { name: "shortcut-add.png", size: 96, buf: LOGO },
+    { name: "shortcut-history.png", size: 96, buf: LOGO },
+    { name: "shortcut-reports.png", size: 96, buf: LOGO },
   ];
 
   for (const task of tasks) {
-    await sharp(task.buf)
-      .resize(task.size, task.size)
-      .png()
-      .toFile(path.join(iconsDir, task.name));
-    console.log(`✅ Generated /public/icons/${task.name}`);
+    await png(task.buf, task.size).toFile(path.join(ICONS_DIR, task.name));
+    console.log(`✅ /public/icons/${task.name}`);
   }
 
-  console.log("\n🚀 All icons generated! Run npm run dev to verify.");
+  // favicon.ico (16, 32, 48) — embed PNGs in an ICO container
+  const favSizes = [16, 32, 48];
+  const favBuffers: Buffer[] = [];
+  for (const s of favSizes) {
+    favBuffers.push(await png(FAVICON, s).toBuffer());
+  }
+  const entries: Buffer[] = [];
+  let offset = 6 + favSizes.length * 16;
+  for (let i = 0; i < favSizes.length; i++) {
+    const s = favSizes[i];
+    const data = favBuffers[i];
+    const entry = Buffer.alloc(16);
+    entry[0] = s >= 256 ? 0 : s; // width
+    entry[1] = s >= 256 ? 0 : s; // height
+    entry[2] = 0; // color count
+    entry[3] = 0; // reserved
+    entry.writeUInt16LE(1, 4); // planes
+    entry.writeUInt16LE(32, 6); // bit count
+    entry.writeUInt32LE(data.length, 8); // size
+    entry.writeUInt32LE(offset, 12); // offset
+    entries.push(entry);
+    offset += data.length;
+  }
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0); // reserved
+  header.writeUInt16LE(2, 2); // type = icon
+  header.writeUInt16LE(favSizes.length, 4); // count
+  await fs.promises.writeFile(path.join(ICONS_DIR, "favicon.ico"), Buffer.concat([header, ...entries, ...favBuffers]));
+  console.log(`✅ /public/icons/favicon.ico (${favSizes.join(",")})`);
+
+  // favicon.svg (copy source)
+  fs.copyFileSync(path.join(process.cwd(), "public", "favicon.svg"), path.join(ICONS_DIR, "favicon.svg"));
+  console.log(`✅ /public/icons/favicon.svg`);
+
+  // iOS splash screens (logo on brand gradient)
+  const splashSVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+    <defs>
+      <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#070A1A"/>
+        <stop offset="50%" stop-color="#1A183C"/>
+        <stop offset="100%" stop-color="#0A0F2A"/>
+      </linearGradient>
+    </defs>
+    <rect width="512" height="512" fill="url(#g)"/>
+    <circle cx="256" cy="256" r="230" fill="#1A183C" opacity="0.5"/>
+    <path d="M130 438 L112 422 L238 142 L274 158 Z" fill="#FFFFFF"/>
+    <path d="M256 108 L232 150 L280 150 Z" fill="#FFFFFF"/>
+    <path d="M238 158 L274 142 L398 422 L362 438 Z" fill="#FFFFFF"/>
+    <path d="M380 470 L356 430 L404 430 Z" fill="#FFFFFF"/>
+    <rect x="185" y="286" width="142" height="28" rx="14" fill="#FFFFFF"/>
+  </svg>`;
+  const splashBuf = Buffer.from(splashSVG);
+  const splashSizes = [
+    { name: "splash-390x844.png", w: 390, h: 844 },
+    { name: "splash-828x1792.png", w: 828, h: 1792 },
+    { name: "splash-1170x2436.png", w: 1170, h: 2436 },
+    { name: "splash-1242x2208.png", w: 1242, h: 2208 },
+  ];
+  for (const s of splashSizes) {
+    await sharp(splashBuf).resize(s.w, s.h).png().toFile(path.join(SPLASH_DIR, s.name));
+    console.log(`✅ /public/splash/${s.name}`);
+  }
+
+  console.log("\n🚀 All PWA icons generated.");
 }
 
-generateIcons().catch(console.error);
+generateIcons().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

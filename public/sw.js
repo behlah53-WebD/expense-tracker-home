@@ -1,4 +1,4 @@
-// Aurora Ledger Service Worker v1
+// Aurora Ledger Service Worker v2
 // Hand-rolled — Next.js 16 uses Turbopack which is incompatible with Serwist/next-pwa.
 //
 // CACHING STRATEGY RATIONALE:
@@ -9,10 +9,22 @@
 // • Caches cleared on sign-out via CLEAR_CACHES message
 // • New SW version → postMessage SW_UPDATED to all clients → app shows "Update" toast
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const STATIC_CACHE = `aurora-static-${CACHE_VERSION}`;
 const API_CACHE = `aurora-api-${CACHE_VERSION}`;
 const ALL_CACHES = [STATIC_CACHE, API_CACHE];
+
+// Precached on install so installed PWAs pick up the new branding/icons.
+const PRECACHE_URLS = [
+  "/offline",
+  "/icons/favicon.ico?v=2",
+  "/icons/favicon.svg?v=2",
+  "/icons/icon-192.png?v=2",
+  "/icons/icon-512.png?v=2",
+  "/icons/icon-maskable-512.png?v=2",
+  "/icons/icon-monochrome.png?v=2",
+  "/icons/apple-touch-icon.png?v=2",
+];
 
 // Routes that must NEVER be intercepted (auth, mutations)
 const BYPASS_PATTERNS = [
@@ -54,7 +66,7 @@ self.addEventListener("install", (event) => {
     caches
       .open(STATIC_CACHE)
       .then((cache) =>
-        cache.addAll(["/offline"]).catch(() => {})
+        cache.addAll(PRECACHE_URLS).catch(() => {})
       )
       .then(() => self.skipWaiting())
   );
