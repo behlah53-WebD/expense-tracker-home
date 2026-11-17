@@ -100,7 +100,10 @@ const TxSlip = memo(function TxSlip(props: {
               color,
             }}
           >
-            <CategoryIcon name={tx.category?.icon || "Tag"} className="w-5 h-5" />
+            <CategoryIcon
+              name={tx.category?.icon || "Tag"}
+              className="w-5 h-5"
+            />
           </div>
 
           <div className="min-w-0 flex-1">
@@ -199,9 +202,7 @@ const DayStub = memo(function DayStub({
           className="mt-1 font-mono text-xs font-semibold tabular-nums"
           style={{
             color:
-              group.net >= 0
-                ? "var(--aurora-mint)"
-                : "var(--aurora-coral)",
+              group.net >= 0 ? "var(--aurora-mint)" : "var(--aurora-coral)",
           }}
           title="Net for the day"
         >
@@ -243,7 +244,11 @@ export default function TransactionsPage() {
   );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const { data, isLoading, refetch: refetchTransactions } = useTransactions({
+  const {
+    data,
+    isLoading,
+    refetch: refetchTransactions,
+  } = useTransactions({
     type,
     categoryId: categoryId === "ALL" ? undefined : categoryId,
     q: debouncedSearch || undefined,
@@ -253,7 +258,8 @@ export default function TransactionsPage() {
     page,
     limit: 10,
   });
-  const { data: categories = [], refetch: refetchTxCategories } = useCategories();
+  const { data: categories = [], refetch: refetchTxCategories } =
+    useCategories();
   const deleteMutation = useDeleteTransaction();
 
   const transactions = useMemo(() => data?.transactions || [], [data]);
@@ -290,13 +296,17 @@ export default function TransactionsPage() {
       refetchTxCategories();
     };
     window.addEventListener("aurora:category-change", handleCategoryChange);
-    return () => window.removeEventListener("aurora:category-change", handleCategoryChange);
+    return () =>
+      window.removeEventListener(
+        "aurora:category-change",
+        handleCategoryChange
+      );
   }, [refetchTransactions, refetchTxCategories]);
 
   // If the filtered category was deleted, reset category filter to "ALL"
   useEffect(() => {
     if (categoryId !== "ALL" && categories.length > 0) {
-      const exists = categories.some((c) => c.id === categoryId);
+      const exists = categories.some(c => c.id === categoryId);
       if (!exists) {
         setCategoryId("ALL");
       }
@@ -400,7 +410,8 @@ export default function TransactionsPage() {
             Transactions
           </h1>
           <span className="relative inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[var(--border)]/60 bg-white/5 text-[10px] font-semibold text-[var(--text-muted)] shadow-sm">
-            {pagination.totalCount} record{pagination.totalCount === 1 ? "" : "s"}
+            {pagination.totalCount} record
+            {pagination.totalCount === 1 ? "" : "s"}
           </span>
         </div>
         <button
@@ -411,7 +422,10 @@ export default function TransactionsPage() {
           aria-label="Add transaction"
           className="relative w-10 h-10 rounded-2xl flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 to-violet-600 shadow-[0_0_20px_rgba(79,70,229,0.45)] text-white transition-all hover:scale-105 active:scale-95 focus-visible:ring-2 focus-visible:ring-[var(--primary)]/50 group"
         >
-          <Plus className="w-5 h-5 stroke-[2.5] relative z-10" aria-hidden="true" />
+          <Plus
+            className="w-5 h-5 stroke-[2.5] relative z-10"
+            aria-hidden="true"
+          />
           <span
             className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/25 to-transparent -skew-x-12 -translate-x-[120%] group-hover:animate-[shine_1.5s_infinite]"
             aria-hidden="true"
@@ -421,272 +435,384 @@ export default function TransactionsPage() {
 
       {/* Unified summary */}
       <section aria-label="Totals for entries on this page" className="mt-3">
-        <div className="glass-card relative overflow-hidden rounded-[18px] border border-[var(--border)]/60 bg-white/5 backdrop-blur-md p-4 shadow-xl ring-1 ring-[var(--border)]/30">
-          <span className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 via-[var(--primary)] to-rose-400 opacity-70" />
+        <div
+          className="relative overflow-hidden rounded-[22px] p-[1.5px] shadow-[0_8px_40px_-12px_rgba(124,92,255,0.35)]"
+          style={{
+            background:
+              "linear-gradient(135deg,rgba(52,211,153,0.6) 0%,rgba(124,92,255,0.7) 45%,rgba(251,113,133,0.6) 100%)",
+          }}
+        >
+          {/* inner card */}
+          <div
+            className="relative overflow-hidden rounded-[20px] backdrop-blur-xl"
+            style={{
+              background:
+                "color-mix(in srgb,var(--bg-elevated) 88%,transparent)",
+            }}
+          >
+            {/* ambient glow blobs */}
+            <span
+              className="pointer-events-none absolute -top-10 -left-10 w-48 h-48 rounded-full bg-emerald-400/10 blur-3xl"
+              aria-hidden="true"
+            />
+            <span
+              className="pointer-events-none absolute -bottom-10 -right-10 w-56 h-56 rounded-full bg-[var(--primary)]/12 blur-3xl"
+              aria-hidden="true"
+            />
+            <span
+              className="pointer-events-none absolute top-0 right-1/3 w-32 h-32 rounded-full bg-rose-400/8 blur-2xl"
+              aria-hidden="true"
+            />
 
-          <div className="flex flex-col gap-3">
-              {/* Net hero */}
-              <div className="flex items-end justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
+            {/* rainbow top bar */}
+            <span
+              className="absolute top-0 left-0 right-0 h-[2px]"
+              style={{
+                background: "linear-gradient(90deg,#34d399,#7C5CFF,#fb7185)",
+                opacity: 0.9,
+              }}
+              aria-hidden="true"
+            />
+
+            <div className="relative z-10 p-5 lg:p-6">
+              {/* ── Desktop: two-column hero ── */}
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-0">
+                {/* Left — net balance */}
+                <div className="lg:flex-1 lg:border-r lg:border-[var(--border)]/40 lg:pr-8">
+                  <p
+                    className="text-[10px] uppercase tracking-[0.12em] font-bold mb-1"
+                    style={{
+                      color:
+                        "color-mix(in srgb,var(--text-muted) 80%,var(--primary))",
+                    }}
+                  >
                     Net Balance
                   </p>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-[13px] text-[var(--text-muted)] font-medium">₹</span>
-                  <CountUpAmount
-                    amount={totals.net}
-                    currency={currency}
-                    className="text-[34px] font-bold tabular-nums tracking-tight"
-                    duration={900}
-                  />
-                </div>
-                </div>
-              </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-semibold text-[var(--text-muted)]">
+                      ₹
+                    </span>
+                    <CountUpAmount
+                      amount={totals.net}
+                      currency={currency}
+                      className="text-[42px] lg:text-[52px] font-black tabular-nums tracking-[-0.03em] leading-none"
+                      duration={900}
+                    />
+                  </div>
 
-            {/* In / Out chips */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)]/40 bg-white/5">
-                <div className="w-5 h-5 rounded-lg grid place-items-center bg-emerald-500/10 text-emerald-400">
-                  <ArrowDownLeft className="w-2.5 h-2.5" aria-hidden="true" />
+                  {/* income vs expense split bar */}
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-[10px] text-emerald-400 font-semibold tabular-nums">
+                      {totals.inc + totals.out > 0
+                        ? `${Math.round((totals.inc / (totals.inc + totals.out)) * 100)}% in`
+                        : "0%"}
+                    </span>
+                    <div className="flex-1 h-[6px] rounded-full overflow-hidden bg-white/8 relative">
+                      <motion.div
+                        className="absolute left-0 top-0 h-full rounded-full"
+                        style={{
+                          background: "linear-gradient(90deg,#34d399,#7C5CFF)",
+                        }}
+                        animate={{
+                          width:
+                            totals.inc + totals.out === 0
+                              ? "50%"
+                              : `${Math.min(100, (totals.inc / (totals.inc + totals.out)) * 100)}%`,
+                        }}
+                        transition={{
+                          type: "spring",
+                          damping: 22,
+                          stiffness: 100,
+                        }}
+                      />
+                      <motion.div
+                        className="absolute right-0 top-0 h-full rounded-full"
+                        style={{
+                          background: "linear-gradient(90deg,#7C5CFF,#fb7185)",
+                        }}
+                        animate={{
+                          width:
+                            totals.inc + totals.out === 0
+                              ? "50%"
+                              : `${Math.min(100, (totals.out / (totals.inc + totals.out)) * 100)}%`,
+                        }}
+                        transition={{
+                          type: "spring",
+                          damping: 22,
+                          stiffness: 100,
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-rose-400 font-semibold tabular-nums">
+                      {totals.inc + totals.out > 0
+                        ? `${Math.round((totals.out / (totals.inc + totals.out)) * 100)}% out`
+                        : "0%"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
-                    Money In
-                  </p>
-                  <span className="text-[13px] font-mono font-bold tabular-nums text-emerald-400">
+
+                {/* Right — money in / money out */}
+                <div className="grid grid-cols-2 gap-3 lg:flex-1 lg:pl-8">
+                  {/* Money In */}
+                  <div
+                    className="relative overflow-hidden rounded-[14px] p-3.5"
+                    style={{
+                      background:
+                        "color-mix(in srgb,#34d399 8%,var(--surface))",
+                      border:
+                        "1px solid color-mix(in srgb,#34d399 20%,transparent)",
+                    }}
+                  >
+                    <span
+                      className="pointer-events-none absolute -top-4 -right-4 w-20 h-20 rounded-full bg-emerald-400/10 blur-2xl"
+                      aria-hidden="true"
+                    />
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-7 h-7 rounded-lg grid place-items-center shadow-[0_0_12px_rgba(52,211,153,0.3)]"
+                        style={{
+                          background:
+                            "linear-gradient(135deg,rgba(52,211,153,0.25),rgba(52,211,153,0.1))",
+                          color: "#34d399",
+                        }}
+                      >
+                        <ArrowDownLeft
+                          className="w-3.5 h-3.5"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <p className="text-[10px] uppercase tracking-[0.1em] font-bold text-emerald-400/80">
+                        Money In
+                      </p>
+                    </div>
                     <CountUpAmount
                       amount={totals.inc}
                       currency={currency}
-                      className="text-[13px]"
+                      className="text-[22px] font-black tabular-nums tracking-tight text-emerald-400 leading-none"
                       compact
                     />
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--border)]/40 bg-white/5">
-                <div className="w-5 h-5 rounded-lg grid place-items-center bg-rose-500/10 text-rose-400">
-                  <ArrowUpRight className="w-2.5 h-2.5" aria-hidden="true" />
-                </div>
-                <div className="flex flex-col">
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)] font-semibold">
-                    Money Out
-                  </p>
-                  <span className="text-[13px] font-mono font-bold tabular-nums text-rose-400">
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">
+                      Total income
+                    </p>
+                  </div>
+
+                  {/* Money Out */}
+                  <div
+                    className="relative overflow-hidden rounded-[14px] p-3.5"
+                    style={{
+                      background:
+                        "color-mix(in srgb,#fb7185 8%,var(--surface))",
+                      border:
+                        "1px solid color-mix(in srgb,#fb7185 20%,transparent)",
+                    }}
+                  >
+                    <span
+                      className="pointer-events-none absolute -top-4 -right-4 w-20 h-20 rounded-full bg-rose-400/10 blur-2xl"
+                      aria-hidden="true"
+                    />
+                    <div className="flex items-center gap-2 mb-2">
+                      <div
+                        className="w-7 h-7 rounded-lg grid place-items-center shadow-[0_0_12px_rgba(251,113,133,0.3)]"
+                        style={{
+                          background:
+                            "linear-gradient(135deg,rgba(251,113,133,0.25),rgba(251,113,133,0.1))",
+                          color: "#fb7185",
+                        }}
+                      >
+                        <ArrowUpRight
+                          className="w-3.5 h-3.5"
+                          aria-hidden="true"
+                        />
+                      </div>
+                      <p className="text-[10px] uppercase tracking-[0.1em] font-bold text-rose-400/80">
+                        Money Out
+                      </p>
+                    </div>
                     <CountUpAmount
                       amount={totals.out}
                       currency={currency}
-                      className="text-[13px]"
+                      className="text-[22px] font-black tabular-nums tracking-tight text-rose-400 leading-none"
                       compact
                     />
-                  </span>
+                    <p className="text-[10px] text-[var(--text-muted)] mt-1 font-medium">
+                      Total expenses
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Progress bar */}
-            <div className="w-full h-[6px] rounded-full bg-white/10 overflow-hidden border border-white/10">
-              <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-[var(--primary)] to-rose-400 shadow-[0_0_12px_rgba(16,185,129,0.35)]"
-                animate={{
-                  width:
-                    totals.inc + totals.out === 0
-                      ? 50
-                      : Math.min(100, (totals.inc / (totals.inc + totals.out)) * 100),
-                }}
-                transition={{ type: "spring", damping: 22, stiffness: 100 }}
-              />
             </div>
           </div>
         </div>
       </section>
 
       {/* One toolbar for every screen size */}
-      <GlassCard className="p-3 space-y-3">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-          <div className="flex items-center gap-2 w-full md:w-auto">
+      <div className="relative overflow-hidden rounded-[18px] p-[1px]"
+        style={{ background: "linear-gradient(135deg,rgba(124,92,255,0.35),rgba(124,92,255,0.08) 60%,rgba(251,113,133,0.2))" }}>
+        <div className="rounded-[17px] backdrop-blur-xl"
+          style={{ background: "color-mix(in srgb,var(--bg-elevated) 85%,transparent)" }}>
+
+          {/* ── Desktop single row (lg+) ── */}
+          <div className="hidden lg:flex items-center gap-3 px-5 h-[68px]">
+            {/* Search */}
             <div className="relative flex-1 min-w-0">
-              <Search
-                className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
-                aria-hidden="true"
-              />
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" aria-hidden="true" />
               <input
                 type="search"
-                placeholder="Search by note or category"
+                placeholder="Search by note or category…"
                 value={searchQuery}
-                onChange={e => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
-                }}
-                className={`glass-input w-full h-10 pl-9 pr-8 text-base md:text-sm focus:outline-none focus:ring-1 focus:ring-[var(--primary)] transition-all ${
-                  searchQuery ? "pr-11" : ""
-                }`}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                className="glass-input w-full h-11 pl-10 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 transition-all rounded-xl"
                 aria-label="Search transactions"
               />
               {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setPage(1);
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-                  aria-label="Clear search"
-                >
+                <button type="button" onClick={() => { setSearchQuery(""); setPage(1); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" aria-label="Clear search">
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowFilters(v => !v)}
-              aria-expanded={showFilters}
-              aria-label="Filters"
-              className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                advancedCount > 0 || showFilters
-                  ? "bg-[var(--primary)] text-white shadow-[0_0_15px_rgba(99,102,241,0.5)]"
-                  : "bg-white/10 border border-[var(--border)]/40 text-[var(--text-muted)] hover:bg-white/20"
-              }`}
-            >
-              <SlidersHorizontal className="w-5 h-5" aria-hidden="true" />
+            {/* Filter button */}
+            <div className="relative shrink-0">
+              <button type="button" onClick={() => setShowFilters(v => !v)} aria-expanded={showFilters} aria-label="Filters"
+                className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all active:scale-95 ${
+                  advancedCount > 0 || showFilters
+                    ? "bg-gradient-to-br from-[var(--primary)] to-indigo-600 text-white shadow-[0_0_18px_rgba(99,102,241,0.5)]"
+                    : "bg-white/8 border border-[var(--border)]/40 text-[var(--text-muted)] hover:bg-white/15"
+                }`}>
+                <SlidersHorizontal className="w-[18px] h-[18px]" aria-hidden="true" />
+              </button>
               {advancedCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center shadow-md">
+                  {advancedCount}
+                </span>
               )}
-            </button>
-          </div>
+            </div>
 
-          <div className="w-full md:w-auto flex-shrink-0">
-            <div
-              role="group"
-              aria-label="Transaction type"
-              className="relative inline-flex w-full items-center rounded-xl border border-[var(--border)]/40 bg-white/5 px-1"
-            >
-              <motion.div
-                className="absolute top-1 bottom-1 rounded-lg transition-all duration-200 ease-out"
-                animate={{
-                  left: type === undefined ? "1%" : type === "EXPENSE" ? "34%" : "67%",
-                  width: "31%",
-                }}
-                transition={{ type: "spring", damping: 25, stiffness: 120 }}
-                style={{
-                  background:
-                    type === undefined
-                      ? "var(--primary)"
-                      : type === "EXPENSE"
-                        ? "var(--aurora-coral)"
-                        : "var(--aurora-mint)",
-                }}
-              />
+            <div className="w-px h-7 bg-[var(--border)]/40 shrink-0" aria-hidden="true" />
+
+            {/* Pill switcher — desktop */}
+            <div role="group" aria-label="Transaction type"
+              className="pill-switcher flex items-center gap-1 bg-black/8 border border-[var(--border)]/30 rounded-2xl p-1 shrink-0">
               {typeOptions.map(o => {
                 const active = type === o.value;
-                const dotColor =
-                  o.value === "EXPENSE"
-                    ? "bg-rose-400"
-                    : o.value === "INCOME"
-                      ? "bg-emerald-400"
-                      : "bg-[var(--text-muted)]";
                 return (
-                  <button
-                    key={o.label}
-                    type="button"
-                    onClick={() => {
-                      setType(o.value);
-                      setPage(1);
-                    }}
-                    className="relative z-10 flex-1 h-8 rounded-lg text-[10px] font-semibold transition-all px-2"
-                    style={{
-                      color:
-                        active
-                          ? o.value === "INCOME"
-                            ? "#05140d"
-                            : "#fff"
-                          : "var(--text-muted)",
-                    }}
-                  >
-                    <span className="flex items-center gap-1">
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
-                        aria-hidden="true"
-                      />
-                      {o.label}
-                    </span>
+                  <button key={o.label} type="button" onClick={() => { setType(o.value); setPage(1); }}
+                    className={`h-9 px-4 rounded-xl text-[13px] font-semibold transition-all duration-200 whitespace-nowrap ${
+                      active ? "pill-active text-white" : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    }`}>
+                    {o.label}
                   </button>
                 );
               })}
             </div>
           </div>
+
+          {/* ── Mobile / tablet row (< lg) ── */}
+          <div className="lg:hidden flex items-center gap-2.5 px-3 py-3">
+            {/* Search — takes remaining width */}
+            <div className="relative flex-1 min-w-0">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" aria-hidden="true" />
+              <input
+                type="search"
+                placeholder="Search…"
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                className="glass-input w-full h-10 pl-9 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/35 transition-all rounded-xl"
+                aria-label="Search transactions"
+              />
+              {searchQuery && (
+                <button type="button" onClick={() => { setSearchQuery(""); setPage(1); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors" aria-label="Clear search">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter button */}
+            <div className="relative shrink-0">
+              <button type="button" onClick={() => setShowFilters(v => !v)} aria-expanded={showFilters} aria-label="Filters"
+                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95 shrink-0 ${
+                  advancedCount > 0 || showFilters
+                    ? "bg-gradient-to-br from-[var(--primary)] to-indigo-600 text-white shadow-[0_0_14px_rgba(99,102,241,0.45)]"
+                    : "bg-white/8 border border-[var(--border)]/40 text-[var(--text-muted)] hover:bg-white/15"
+                }`}>
+                <SlidersHorizontal className="w-4 h-4" aria-hidden="true" />
+              </button>
+              {advancedCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center">
+                  {advancedCount}
+                </span>
+              )}
+            </div>
+
+            {/* Pill switcher — mobile (no dots, clean text) */}
+            <div role="group" aria-label="Transaction type"
+              className="flex items-center gap-0.5 bg-white/5 border border-[var(--border)]/30 rounded-xl p-0.5 shrink-0">
+              {typeOptions.map(o => {
+                const active = type === o.value;
+                return (
+                  <button key={o.label} type="button" onClick={() => { setType(o.value); setPage(1); }}
+                    className={`h-9 px-3 rounded-[10px] text-[12px] font-semibold transition-all duration-200 whitespace-nowrap ${
+                      active
+                        ? "bg-gradient-to-br from-[var(--primary)] to-indigo-600 text-white shadow-[0_2px_10px_rgba(124,92,255,0.4)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-white/8"
+                    }`}>
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Advanced filters panel ── */}
+          {showFilters && (
+            <div className="border-t border-[var(--border)]/40 mx-3 lg:mx-5 pb-4 pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <label className="space-y-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Category</span>
+                  <select value={categoryId} onChange={e => withReset(setCategoryId)(e.target.value)}
+                    className="glass-input w-full h-10 px-3 text-sm bg-[var(--bg-elevated)] rounded-xl">
+                    <option value="ALL">All categories</option>
+                    {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                  </select>
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">From</span>
+                  <input type="date" value={fromDate} onChange={e => withReset(setFromDate)(e.target.value)}
+                    className="glass-input w-full h-10 px-3 text-sm rounded-xl" />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">To</span>
+                  <input type="date" value={toDate} onChange={e => withReset(setToDate)(e.target.value)}
+                    className="glass-input w-full h-10 px-3 text-sm rounded-xl" />
+                </label>
+                <label className="space-y-1.5">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Sort by</span>
+                  <select value={sort} onChange={e => withReset(setSort)(e.target.value)}
+                    className="glass-input w-full h-10 px-3 text-sm bg-[var(--bg-elevated)] rounded-xl">
+                    <option value="date-desc">Newest first</option>
+                    <option value="date-asc">Oldest first</option>
+                    <option value="amount-desc">Highest amount</option>
+                    <option value="amount-asc">Lowest amount</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          )}
+
+          {/* Clear all */}
+          {activeCount > 0 && (
+            <div className="flex justify-end px-4 pb-3 -mt-1">
+              <button onClick={resetFilters}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-rose-300 transition-colors">
+                <X className="w-3.5 h-3.5" aria-hidden="true" /> Clear all filters
+              </button>
+            </div>
+          )}
+
         </div>
-
-        {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-3 border-t border-[var(--border)]">
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-medium text-[var(--text-muted)]">
-                Category
-              </span>
-              <select
-                value={categoryId}
-                onChange={e => withReset(setCategoryId)(e.target.value)}
-                className="glass-input w-full h-11 px-3 text-base md:text-sm bg-[var(--bg-elevated)]"
-              >
-                <option value="ALL">All categories</option>
-                {categories.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.type})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-medium text-[var(--text-muted)]">
-                From
-              </span>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={e => withReset(setFromDate)(e.target.value)}
-                className="glass-input w-full h-11 px-3 text-base md:text-sm"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-medium text-[var(--text-muted)]">
-                To
-              </span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={e => withReset(setToDate)(e.target.value)}
-                className="glass-input w-full h-11 px-3 text-base md:text-sm"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-medium text-[var(--text-muted)]">
-                Sort by
-              </span>
-              <select
-                value={sort}
-                onChange={e => withReset(setSort)(e.target.value)}
-                className="glass-input w-full h-11 px-3 text-base md:text-sm bg-[var(--bg-elevated)]"
-              >
-                <option value="date-desc">Newest first</option>
-                <option value="date-asc">Oldest first</option>
-                <option value="amount-desc">Highest amount</option>
-                <option value="amount-asc">Lowest amount</option>
-              </select>
-            </label>
-          </div>
-        )}
-
-        {activeCount > 0 && (
-          <div className="flex justify-end">
-            <button
-              onClick={resetFilters}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[var(--aurora-coral)] hover:underline"
-            >
-              <X className="w-3.5 h-3.5" aria-hidden="true" /> Clear all filters
-            </button>
-          </div>
-        )}
-      </GlassCard>
+      </div>
 
       {/* Ledger timeline */}
       <section aria-label="Transaction list">
